@@ -1,16 +1,136 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Portfolio</title>
+    <title>Project 0: Becoming Friends With Your Camera</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .side-by-side {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px 0;
+        }
+        .side-by-side .image-container {
+            flex: 1;
+            max-width: 45%;
+        }
+        .side-by-side .image-container img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+        }
+
+        .image-container img[src*="DollyZoom.gif"] {
+            max-width: 300px;
+            width: 100%;
+            height: auto;
+        }
+        .caption {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+        .explanation {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #007acc;
         }
     </style>
 </head>
 <body>
-    <h1>Welcome to My CS180 Portfolio!</h1>
-    <a href="./1/index.html">Project 1</a>
+    <h1>Project 0: Becoming Friends With Your Camera</h1>
+    
+    <div class="section">
+        <h2>Part 1: Selfie: The Wrong Way vs. The Right Way</h2>
+        
+        <div class="side-by-side">
+            <div class="image-container">
+                <img src="../images/BadImageTej.jpg" alt="Selfie taken the wrong way">
+                <div class="caption">Figure 1: Picture taken the wrong way</div>
+            </div>
+            
+            <div class="image-container">
+                <img src="../images/GoodImageTej.jpg" alt="Selfie taken with proper technique">
+                <div class="caption">Figure 2: Picture taken the right way</div>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <strong>Left Image:</strong> 
+            The image on the left is a picture that is taken up close with low zoom which causes distortion because the nose of the subject
+            is too close to the camera.
+        </div>
+        
+        <div class="explanation">
+            <strong>Right Image:</strong> 
+            The image on the right is a picture that is taken at a distance with higher zoom. This allows the image to be more clear and has
+            the features of the subject to be equally distanced from the camera.
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Part 2: Architectural Perspective Compression</h2>
+        
+        <div class="side-by-side">
+            <div class="image-container">
+                <img src="../images/AlleyWayZoomed.jpg" alt="Alley Way Zoomed">
+                <div class="caption">Figure 3: At a distance and zoomed in</div>
+            </div>
+            <div class="image-container">
+                <img src="../images/AlleyWayZoomedOut.jpg" alt="Alley Way Zoomed Out">
+                <div class="caption">Figure 4: Walked forward and zoomed out</div>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <strong>Left Image:</strong>
+            The image on the left is a picture that is taken further away with a higher zoom. This allows the image to be less distorted.
+            The higher focal length flattens the field of view which creates more even sized objects.
+        </div>
+        
+        <div class="explanation">
+            <strong>Right Image:</strong>
+            The image on the right is taken closer with lower zoom. This creates a more distorted images. This happens because the shorter
+            focal length causes the field of view to be more spherical and prononunces the 'curves' more.  
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>Part 3: The Dolly Zoom</h2>
+        
+        <div class="image-container">
+            <img src="../images/DollyZoom.gif" alt="Dolly zoom starting position">
+            <div class="caption">Figure 4: Dolly Zoom</div>
+        </div>
+        
+        <div class="explanation">
+            This gif is a dolly zoom of stuffed animals that starts up close with a low zoom and then moves away from the subject while zooming in.
+            The effect is created because while up close, the background is out of focus and the subject is in focus. When you step away while zooming in,
+            this takes that same area and focuses the background while also keeping the subject in focus. This creates a sense of the background changing and distorting while the subject remains the same.
+        </div>
+        
+    </div>
 </body>
 </html>
