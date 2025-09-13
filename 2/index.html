@@ -534,7 +534,6 @@ def align_pyramids(img1, img2):
         </div>
     </div>
 
-    <!-- Modal for enlarged images -->
     <div id="imageModal" class="modal">
         <span class="close">&times;</span>
         <img class="modal-content" id="modalImage">
@@ -542,7 +541,6 @@ def align_pyramids(img1, img2):
     </div>
 
     <script>
-        // Get the modal
         var modal = document.getElementById("imageModal");
         
         // Get the image and caption elements
@@ -564,10 +562,8 @@ def align_pyramids(img1, img2):
             });
         });
         
-        // Get the close button
         var closeBtn = document.getElementsByClassName("close")[0];
         
-        // When the user clicks on the close button, close the modal
         closeBtn.onclick = function() {
             modal.style.display = "none";
         }
@@ -579,7 +575,6 @@ def align_pyramids(img1, img2):
             }
         }
         
-        // Close modal with Escape key
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 modal.style.display = "none";
