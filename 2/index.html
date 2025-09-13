@@ -1,1 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RGB Colorization Project - Prokudin-Gorskii Glass Plate Reconstruction</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            margin: 30px 0;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        h3 {
+            color: #34495e;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .method-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .method-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .image-container img {
+            max-width: 60%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .image-container img.large {
+            width: 50%;
+            height: auto;
+        }
+        
+        .side-by-side {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .side-by-side .image-container {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+        
+        .image-container img:hover {
+            transform: scale(1.02);
+        }
+        
+        .caption {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .gallery-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-5px);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .gallery-item h4 {
+            color: #2c3e50;
+            margin: 10px 0 5px 0;
+            font-size: 1.1em;
+        }
+        
+        .gallery-item p {
+            color: #495057;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0 0 0;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #fff;
+            padding: 10px 0;
+            font-size: 1.1em;
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #bbb;
+            text-decoration: none;
+        }
+        
+        .gallery-item {
+            cursor: pointer;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RGB Colorization Project</h1>
+            <p class="subtitle">Prokudin-Gorskii Glass Plate Reconstruction using Image Alignment and Pyramid Processing</p>
+        </header>
 
+        <div class="section">
+            <h2>Project Overview</h2>
+            <p>This project focuses on the reconstruction and colorization of historical glass plate photographs from the Prokudin-Gorskii collection. These photographs were captured using a special camera that took three separate exposures through red, green, and blue filters, creating three grayscale images that, when properly aligned, can be combined to produce full-color photographs.</p>
+            
+            <p>The challenge lies in the fact that the three color channels are often misaligned due to camera movement, mechanical imperfections, or the passage of time. Our goal is to develop algorithms that can automatically align these channels and reconstruct the original color images.</p>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">14</div>
+                    <div class="stat-label">Images Processed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Alignment Methods</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">7</div>
+                    <div class="stat-label">Max Pyramid Levels</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Input Images</h2>
+            <p>Our algorithm takes digitized glass plate images as input, where the three color channels (Blue, Green, Red) are stacked vertically in a single image. Below are examples of the original input format:</p>
+            
+            <div class="side-by-side">
+                <div class="image-container">
+                    <img src="proj_data/cathedral.jpg" alt="Original Cathedral Input">
+                    <div class="caption">Cathedral - Original Input</div>
+                </div>
+                <div class="image-container">
+                    <img src="proj_data/monastery.jpg" alt="Original Monastery Input">
+                    <div class="caption">Monastery - Original Input</div>
+                </div>
+                <div class="image-container">
+                    <img src="proj_data/tobolsk.jpg" alt="Original Tobolsk Input">
+                    <div class="caption">Tobolsk - Original Input</div>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Input Format:</strong> Each image contains three vertically stacked color channels (BGR order from top to bottom). Our algorithm separates these channels and aligns them to reconstruct the original color photograph.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Method 1: Brute Force Alignment</h2>
+            <p>Our initial approach uses exhaustive search to find the optimal alignment between color channels. This method evaluates all possible displacements within a specified search window and selects the one that produces the best match according to our chosen similarity metric.</p>
+            
+            <div class="method-grid">
+                <div class="method-card">
+                    <h3>L2 Norm (Euclidean Distance)</h3>
+                    <p>The L2 norm measures the sum of squared differences between corresponding pixels in two images. Lower values indicate better alignment.</p>
+                    <div class="code-block">
+def l2_distance(img1, img2):
+    diff = img1 - img2
+    squared = diff ** 2
+    return np.sqrt(np.sum(squared))
+                    </div>
+                </div>
+                
+                <div class="method-card">
+                    <h3>Normalized Cross-Correlation (NCC)</h3>
+                    <p>NCC measures the normalized dot product between two images, providing a value between -1 and 1, where 1 indicates perfect correlation.</p>
+                    <div class="code-block">
+def ncc_score(img1, img2):
+    flat1 = img1.ravel().astype(np.float64)
+    flat2 = img2.ravel().astype(np.float64)
+    # Normalize and compute correlation
+    return correlation_value
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <strong>Example Result:</strong> The church image below demonstrates the effectiveness of our brute force approach using both L2 and NCC metrics. The algorithm successfully aligned the three color channels to produce a vibrant, historically accurate color photograph.
+            </div>
+            
+            <div class="image-container">
+                <img src="colorized_pics/monastery_colorized.jpg" alt="Monastery - Brute Force Alignment Result" class="large">
+                <div class="caption">Monastery - Reconstructed using brute force alignment with L2 and NCC metrics</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Method 2: Image Pyramid Processing</h2>
+            <p>While brute force works well for smaller images, it becomes computationally expensive for high-resolution glass plate scans. To address this, we implemented an image pyramid approach that processes images at multiple scales, starting from the coarsest level and refining the alignment as we move to finer levels.</p>
+            
+            <h3>Pyramid Construction</h3>
+            <p>Our image pyramid is built by recursively downsampling the original image by a factor of 2 at each level. This creates a hierarchy of images at different resolutions, allowing us to:</p>
+            <ul>
+                <li>Start with a coarse alignment on the smallest image</li>
+                <li>Use the result to initialize alignment at the next finer level</li>
+                <li>Refine the alignment progressively through all pyramid levels</li>
+                <li>Apply the final displacement to the original high-resolution image</li>
+            </ul>
+            
+            <div class="code-block">
+def pyramid_down(img, factor=2):
+    # Apply Gaussian blur to prevent aliasing
+    blurred = gaussian_filter(img, sigma=1.0/factor)
+    # Subsample by the factor
+    return downsampled_images
+
+def align_pyramids(img1, img2):
+    # Build pyramid levels
+    # Align from coarse to fine
+    # Return final aligned image
+            </div>
+            
+            <h3>Advantages of Pyramid Processing</h3>
+            <ul>
+                <li><strong>Computational Efficiency:</strong> Reduces search space at each level</li>
+                <li><strong>Robust Alignment:</strong> Coarse alignment provides good initialization</li>
+                <li><strong>Scalability:</strong> Handles large images (TIF files) effectively</li>
+                <li><strong>Quality:</strong> Maintains alignment accuracy across all resolutions</li>
+            </ul>
+            
+            <div class="image-container">
+                <img src="colorized_pics/icon_colorized.jpg" alt="Emir - Pyramid Processing Result">
+                <div class="caption">Icon - High-resolution reconstruction using image pyramid processing</div>
+            </div>
+            
+            <div class="image-container">
+                <img src="colorized_pics/siren_colorized.jpg" alt="Three Generations - Pyramid Processing Result">
+                <div class="caption">Siren - Complex scene successfully aligned using pyramid method</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Complete Gallery</h2>
+            <p>Below are all the colorized images from our collection, showcasing the effectiveness of our alignment algorithms across different types of historical photographs. Shown are also the displacement values for the green and red channels.</p>
+            
+            <div class="gallery">                
+                <div class="gallery-item">
+                    <img src="colorized_pics/church_colorized.jpg" alt="Church">
+                    <h4>Church</h4>
+                    <p>Green: (4, 22) | Red: (-3, 58)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/harvesters_colorized.jpg" alt="Harvesters">
+                    <h4>Harvesters</h4>
+                    <p>Green: (16, 59) | Red: (13, 123)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/icon_colorized.jpg" alt="Icon">
+                    <h4>Icon</h4>
+                    <p>Green: (15, 40) | Red: (22, 88)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/italil_colorized.jpg" alt="Italil">
+                    <h4>Italil</h4>
+                    <p>Green: (20, 36) | Red: (34, 75)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/lastochikino_colorized.jpg" alt="Lastochikino">
+                    <h4>Lastochikino</h4>
+                    <p>Green: (-1, -2) | Red: (-7, 74)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/lugano_colorized.jpg" alt="Lugano">
+                    <h4>Lugano</h4>
+                    <p>Green: (-15, 38) | Red: (-28, 89)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/melons_colorized.jpg" alt="Melons">
+                    <h4>Melons</h4>
+                    <p>Green: (7, 81) | Red: (11, 176)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/monastery_colorized.jpg" alt="Monastery">
+                    <h4>Monastery</h4>
+                    <p>Green: (1, -2) | Red: (2, 3)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/self_portrait_colorized.jpg" alt="Self Portrait">
+                    <h4>Self Portrait</h4>
+                    <p>Green: (25, 77) | Red: (34, 173)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/siren_colorized.jpg" alt="Siren">
+                    <h4>Siren</h4>
+                    <p>Green: (-6, 48) | Red: (-24, 93)</p>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="colorized_pics/cathedral_colorized.jpg" alt="Cathedral">
+                    <h4>Cathedral</h4>
+                    <p>Green: (1, 3) | Red: (2, 8)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/three_generations_colorized.jpg" alt="Three Generations">
+                    <h4>Three Generations</h4>
+                    <p>Green: (13, 51) | Red: (10, 111)</p>
+                </div>
+
+                <div class="gallery-item">
+                    <img src="colorized_pics/emir_colorized.jpg" alt="Emir">
+                    <h4>Emir</h4>
+                    <p>Green: (23, 45) | Red: (42, 75)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/tobolsk_colorized.jpg" alt="Tobolsk">
+                    <h4>Tobolsk</h4>
+                    <p>Green: (2, 2) | Red: (2, 5)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/lake_colorized.jpg" alt="Lake">
+                    <h4>Lake</h4>
+                    <p>Green: (0, 0) | Red: (0, 0)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/flowers_colorized.jpg" alt="Flowers">
+                    <h4>Flowers</h4>
+                    <p>Green: (0, 0) | Red: (0, 0)</p>
+                </div>
+                
+                <div class="gallery-item">
+                    <img src="colorized_pics/cliff_colorized.jpg" alt="Cliff">
+                    <h4>Cliff</h4>
+                    <p>Green: (0, 0) | Red: (0, 0)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Technical Implementation</h2>
+            <p>This project was implemented using Python with the following key libraries:</p>
+            <ul>
+                <li><strong>NumPy</strong></li>
+                <li><strong>scikit-image</strong></li>
+                <li><strong>SciPy</strong></li>
+                <li><strong>Matplotlib</strong></li>
+            </ul>
+            
+            <div class="highlight">
+                <strong>Key Parameters:</strong> JPG images used 4 pyramid levels with a 20-pixel crop, while TIF images used 7 pyramid levels with a 200-pixel crop for optimal performance and quality.
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for enlarged images -->
+    <div id="imageModal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+        <div id="modalCaption" class="modal-caption"></div>
+    </div>
+
+    <script>
+        // Get the modal
+        var modal = document.getElementById("imageModal");
+        
+        // Get the image and caption elements
+        var modalImg = document.getElementById("modalImage");
+        var captionText = document.getElementById("modalCaption");
+        
+        // Get all gallery items
+        var galleryItems = document.querySelectorAll('.gallery-item');
+        
+        // Add click event listeners to all gallery items
+        galleryItems.forEach(function(item) {
+            item.addEventListener('click', function() {
+                var img = item.querySelector('img');
+                var title = item.querySelector('h4').textContent;
+                
+                modal.style.display = "block";
+                modalImg.src = img.src;
+                captionText.innerHTML = "<strong>" + title + "</strong>";
+            });
+        });
+        
+        // Get the close button
+        var closeBtn = document.getElementsByClassName("close")[0];
+        
+        // When the user clicks on the close button, close the modal
+        closeBtn.onclick = function() {
+            modal.style.display = "none";
+        }
+        
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                modal.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
