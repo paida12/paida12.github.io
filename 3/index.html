@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Vision Project - Filters and Applications</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-top: 40px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 30px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .image-container {
+            text-align: center;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .image-container p {
+            margin-top: 10px;
+            font-weight: 500;
+            color: #495057;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .comparison {
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .explanation {
+            background-color: #f0f8f0;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        .process-step {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Computer Vision Project: Filters and Applications</h1>
+        
+        <div class="explanation" style="background-color: #e8f4fd; border-left: 4px solid #3498db; margin-bottom: 30px;">
+            <h3>Most Important Lesson:</h3>
+            <p>The most significant insight gained from this project was developing a fundamental understanding of what <strong>edges</strong> represent in digital images and how they can be manipulated for image processing applications. Through techniques such as blurring and sharpening, we can extract meaningful information about an image's structure and composition, which has fundamentally transformed my perspective on digital photography. Prior to this work, I was unaware of the distinction between horizontal and vertical edges and how they are used in image processing.</p>
+            <p>Understanding that images are composed of different frequency components - where edges represent high frequencies and smooth areas represent low frequencies - completely changed my perspective on digital photography. The ability to separate these components through techniques like Gaussian blurring and unsharp masking reveals the underlying structure of images in ways that aren't immediately obvious to the human eye.</p>
+        </div>
+        
+        <h2>Part 1: Filters and Edges</h2>
+        
+        <h3>Part 1.1: Convolution Implementation</h3>
+        <p>This section demonstrates custom convolution implementations using only NumPy, comparing them with scipy.signal.convolve2d.</p>
+        
+        <div class="code-block">
+<pre>def manual_convolve_4(kernel, img, x, y):
+    result = 0
+    middle = len(kernel) // 2
+    for i in range(middle * -1, middle + 1):
+        for j in range(middle * -1, middle + 1):
+            result += kernel[i + middle][j + middle] * img[i + x][j + y]
+    return result
+
+def manual_convolve_2(kernel, img):
+    return np.sum(kernel * img)
+
+def convolution(img, kernel):
+    padding = len(kernel) // 2
+    padded_img = np.pad(img, pad_width = padding, mode = 'constant')
+    
+    result4 = np.zeros_like(padded_img, dtype = float)
+    result2 = np.zeros_like(padded_img, dtype = float)
+    
+    for i in range(padding, len(padded_img) - padding):
+        for j in range(padding, len(padded_img[0]) - padding):
+            result4[i][j] = manual_convolve_4(kernel, padded_img, i, j)
+            result2[i][j] = manual_convolve_2(kernel, padded_img[i - padding : i + padding + 1, j - padding : j + padding + 1])
+    
+    unpadded_result4 = result4[padding : -padding, padding : -padding]
+    unpadded_result2 = result2[padding : -padding, padding : -padding]
+    
+    return unpadded_result4, unpadded_result2</pre>
+        </div>
+        
+        <div class="image-grid">
+            <div class="image-container" style="max-width: 300px; margin: 0 auto;">
+                <img src="images/convolution_img.jpeg" alt="Original Test Image" style="max-width: 100%; height: auto;">
+                <p>Original test image for convolution</p>
+            </div>
+        </div>
+        
+        <h4>Convolution Results:</h4>
+        <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/01_original_convolution_test.png" alt="Original Test Image">
+                <p>Original test image for convolution</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/02_convolution_4_loops.png" alt="Convolution 4 Loops">
+                <p>Convolution result using 4 for loops</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/03_convolution_2_loops.png" alt="Convolution 2 Loops">
+                <p>Convolution result using 2 for loops</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/04_convolution_scipy.png" alt="Convolution Scipy">
+                <p>Convolution result using scipy.signal.convolve2d</p>
+            </div>
+        </div>
+        
+        <div class="comparison">
+            <h4>Runtime and Boundary Handling Comparison:</h4>
+            <ul>
+                <li><strong>Custom Implementation:</strong> Uses zero-padding for boundary handling, which preserves image dimensions but may introduce artifacts at edges</li>
+                <li><strong>scipy.signal.convolve2d:</strong> More optimized implementation with better boundary handling options (same, valid, full modes)</li>
+                <li><strong>Runtime:</strong> scipy implementation is significantly faster due to optimized C code, while custom implementation serves educational purposes</li>
+                <li><strong>Boundary Handling:</strong> Both implementations use zero-padding by default, but scipy offers more flexible options</li>
+            </ul>
+        </div>
+        
+        <h3>Part 1.2: Edge Detection</h3>
+        <p>Implementation of partial derivatives, gradient magnitude, and binarized edge detection.</p>
+        
+        <div class="code-block">
+<pre>def direction_diff(img):
+    kernel = np.array([1, 0, -1])
+    img = np.pad(img, pad_width = 1, mode = 'constant')
+    resultx = np.zeros_like(img, dtype = float)
+    resulty = np.zeros_like(img, dtype = float)
+    for i in range(1, len(img) - 1):
+        for j in range(1, len(img[0]) - 1):
+            resultx[i][j] = manual_convolve_2(kernel, img[i, j - 1 : j + 2])
+            resulty[i][j] = manual_convolve_2(kernel, img[i - 1 : i + 2, j])
+    return resultx[1 : -1, 1 : -1], resulty[1 : -1, 1 : -1]
+
+def edge_detection(img, threshold):
+    x_direction_diff, y_direction_diff = direction_diff(img)
+    gradient_magnitude = np.sqrt(x_direction_diff ** 2 + y_direction_diff ** 2)
+    edge_image = (gradient_magnitude > threshold).astype(int)
+    return edge_image</pre>
+        </div>
+        
+        
+        <h4>Edge Detection Results:</h4>
+        <div class="image-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="image-container">
+                <img src="images/convolution_img.jpeg" alt="Original Test Image">
+                <p>Original test image</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/05_x_direction_derivative.png" alt="X Direction Derivative">
+                <p>X-direction partial derivative</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/06_y_direction_derivative.png" alt="Y Direction Derivative">
+                <p>Y-direction partial derivative</p>
+            </div>
+        </div>
+        <div class="image-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/07_original_cameraman.png" alt="Original Cameraman">
+                <p>Original cameraman image</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/08_edge_detection_cameraman.png" alt="Edge Detection Cameraman">
+                <p>Edge Detection / Gradient Magnitude result (threshold=70)</p>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h4>Edge Detection Tradeoffs:</h4>
+            <p>I chose a threshold of 70 for the cameraman image to balance between finding all significant edges and removing noise. This threshold effectively captures the main structural elements (camera, tripod, background details) while filtering out minor texture variations that would create visual clutter. Lower thresholds let in more noise and higher thresholds filter out too much detail.</p>
+        </div>
+        
+        <h3>Part 1.3: Gaussian and DoG Filters</h3>
+        <p>Construction of Gaussian filters using cv2.getGaussianKernel and comparison with finite difference methods.</p>
+        
+        <div class="code-block">
+<pre># Gaussian kernel construction
+oneD = cv2.getGaussianKernel(3, 1)
+gaussian_kernel = oneD * oneD.T
+
+# Combined edge detection with Gaussian smoothing
+def combined_edge_detection(img, threshold, kernel, dx, dy):
+    combined_dx = signal.convolve2d(kernel, dx, mode = 'same')
+    combined_dy = signal.convolve2d(kernel, dy, mode = 'same')
+    gradient_magnitude_x = signal.convolve2d(img, combined_dx, mode = 'same')
+    gradient_magnitude_y = signal.convolve2d(img, combined_dy, mode = 'same')
+    gradient_magnitude = np.sqrt(gradient_magnitude_x ** 2 + gradient_magnitude_y ** 2)
+    edge_image = (gradient_magnitude > threshold).astype(int)
+    return edge_image</pre>
+        </div>
+        
+        <h4>Gaussian and DoG Filter Results:</h4>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="processed_images/09_gaussian_blurred_cameraman.png" alt="Gaussian Blurred Cameraman">
+                <p>Gaussian blurred cameraman</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/10_edge_detection_blurred_cameraman.png" alt="Edge Detection Blurred">
+                <p>Edge detection on blurred image (threshold=60)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/11_combined_edge_detection.png" alt="Combined Edge Detection">
+                <p>Combined Gaussian + edge detection (threshold=30)</p>
+            </div>
+        </div>
+        
+        <div class="comparison">
+            <h4>Gaussian vs Finite Difference Comparison:</h4>
+            <ul>
+                <li><strong>Gaussian Smoothing:</strong> Reduces noise effectively before edge detection, resulting in cleaner edge maps</li>
+                <li><strong>Finite Difference:</strong> More sensitive to noise but preserves fine details</li>
+                <li><strong>Combined Approach:</strong> Gaussian smoothing followed by edge detection provides the best balance of noise reduction and edge preservation</li>
+                <li><strong>Threshold Adjustment:</strong> Lower threshold (30) needed for combined method due to reduced noise</li>
+            </ul>
+        </div>
+        
+        <h2>Part 2: Applications</h2>
+        
+        <h3>Part 2.1: Unsharp Mask Filter</h3>
+        <p>Implementation of unsharp masking for image sharpening, demonstrating the relationship between blur filters and high frequencies.</p>
+        
+        <div class="code-block">
+<pre>def sharpen_img(img, kernel_size, alpha):
+    img = img.astype(np.float32)
+    blurred_img = cv2.GaussianBlur(img, (kernel_size, kernel_size), 0)
+    diff = img - blurred_img
+    sharpened_img = img + (alpha * diff)
+    sharpened = np.clip(sharpened_img, 0, 255).astype(np.uint8)
+    return sharpened</pre>
+        </div>
+        
+        <h4>Unsharp Mask Results:</h4>
+        <div class="image-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/12_original_blurry_taj.png" alt="Original Blurry Taj">
+                <p>Original blurry Taj Mahal</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/13_sharpened_taj.png" alt="Sharpened Taj">
+                <p>Sharpened Taj Mahal (unsharp mask)</p>
+            </div>
+        </div>
+        <div class="image-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/14_original_face.png" alt="Original Face">
+                <p>Original face image</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/15_blurred_face.png" alt="Blurred Face">
+                <p>Blurred face (Gaussian blur)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/16_sharpened_face.png" alt="Sharpened Face">
+                <p>Sharpened face (unsharp mask)</p>
+            </div>
+        </div>
+        
+        <h4>Alpha Parameter Comparison:</h4>
+        <div class="image-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/16_sharpened_face_05.png" alt="Under-sharpened Face (α=0.5)">
+                <p>Under-sharpened (α=0.5)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/17_sharpened_face_10.png" alt="Optimal Sharpening (α=1.0)">
+                <p>Optimal Sharpening (α=1.0)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/18_sharpened_face_15.png" alt="Over-sharpened Face (α=1.5)">
+                <p>Over-sharpened (α=1.5)</p>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h4>Alpha Parameter Effects:</h4>
+            <p>The alpha (α) parameter controls the strength of the unsharp mask effect. <strong>Lower values (α=0.5)</strong> result in subtle sharpening that may not be noticeable enough, while <strong>higher values (α=1.5)</strong> can create oversharpening artifacts, halos around edges, and an unnatural appearance. The optimal value (α=1.0) provides a good balance between enhancement and natural appearance.</p>
+        </div>
+        
+        <div class="explanation">
+            <h4>How Unsharp Mask Works:</h4>
+            <p>The unsharp mask filter works by:</p>
+            <ol>
+                <li>Creating a blurred version of the image (low frequencies)</li>
+                <li>Computing the difference between original and blurred (high frequencies)</li>
+                <li>Adding a scaled version of the high frequencies back to the original</li>
+            </ol>
+            <p>This enhances edges and fine details while preserving the overall image structure. The alpha parameter controls the sharpening amount - higher values create more pronounced sharpening effects.</p>
+        </div>
+        
+        <h3>Part 2.2: Hybrid Images</h3>
+        <p>Creation of hybrid images by combining low-frequency content from one image with high-frequency content from another.</p>
+        
+        <div class="code-block">
+<pre>def hybrid_img(img1, img2, blur_ksize, sharpen_ksize):
+    img1 = color_to_gray(img1)
+    img2 = color_to_gray(img2)
+    
+    # Blur img2 (low frequencies)
+    img2_blur = cv2.GaussianBlur(img2, (blur_ksize, blur_ksize), 0)
+    
+    # Sharpen img1 (high frequencies)
+    img1_sharp = sharpen_img(img1, sharpen_ksize, 1)
+    
+    # Blend the images
+    hybrid = img2_blur + img1_sharp
+    hybrid = np.clip(hybrid, 0, 255).astype(np.uint8)
+    
+    return hybrid</pre>
+        </div>
+        
+        <div class="image-grid" style="justify-content: center; display: flex; gap: 20px;">
+            <div class="image-container" style="max-width: 300px;">
+                <img src="images/hybrid_python/DerekPicture.jpg" alt="Derek Original" style="max-width: 100%; height: auto;">
+                <p>Derek - original image</p>
+            </div>
+            <div class="image-container" style="max-width: 300px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <img src="images/hybrid_python/nutmeg.jpg" alt="Nutmeg Original" style="max-width: 100%; height: auto;">
+                <p>Nutmeg - original image</p>
+            </div>
+        </div>
+        
+        <h4>Hybrid Image Results (Derek + Nutmeg):</h4>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 400px;">
+                <img src="processed_images/17_derek_nutmeg_hybrid.png" alt="Hybrid Derek Nutmeg" style="max-width: 100%; height: auto;">
+                <p>Final hybrid image</p>
+            </div>
+        </div>
+        
+        <h4>2D Fourier Transforms:</h4>
+        <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="image-container">
+                <img src="processed_images/17_derek_nutmeg_pre_filter1.png" alt="Pre Filter Derek">
+                <p>Pre-filter: Derek (high frequencies)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/17_derek_nutmeg_pre_filter2.png" alt="Pre Filter Nutmeg">
+                <p>Pre-filter: Nutmeg (low frequencies)</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/17_derek_nutmeg_post_filter_sharp.png" alt="Post Filter Sharp">
+                <p>Post-filter: Sharpened Derek</p>
+            </div>
+            <div class="image-container">
+                <img src="processed_images/17_derek_nutmeg_post_filter_blur.png" alt="Post Filter Blur">
+                <p>Post-filter: Blurred Nutmeg</p>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h4>Understanding 2D Fourier Transforms:</h4>
+            <p>The 2D Fourier Transform decomposes images into their frequency components, showing how much of each spatial frequency is present. In these visualizations:</p>
+            <ul>
+                <li><strong>Bright spots</strong> represent strong frequency components</li>
+                <li><strong>Center</strong> shows low frequencies (smooth areas)</li>
+                <li><strong>Edges</strong> show high frequencies (sharp details)</li>
+                <li><strong>Pre-filters</strong> show the original frequency content of each image</li>
+                <li><strong>Post-filters</strong> show how filtering affects the frequency distribution</li>
+            </ul>
+            <p>This analysis helps us understand how the hybrid image combines high-frequency details from Derek with low-frequency structure from Nutmeg.</p>
+        </div>
+        
+        <div class="process-step">
+            <h4>Hybrid Image Process (Derek + Nutmeg):</h4>
+            <ol>
+                <li><strong>Alignment:</strong> Images are aligned using point correspondence</li>
+                <li><strong>Fourier Analysis:</strong> Frequency domain analysis shows the separation of low and high frequencies</li>
+                <li><strong>Filtering:</strong> Nutmeg is sharpened (high frequencies), Derek is blurred (low frequencies)</li>
+                <li><strong>Cutoff Frequency:</strong> Chosen to balance between preserving important details and creating smooth transitions. Used Gaussian blur kernel size of 75 and sharpening kernel size of 5</li>
+                <li><strong>Blending:</strong> High and low frequency components are combined</li>
+            </ol>
+        </div>
+        
+        <h4>Original Images (Obama + Lincoln):</h4>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/lincoln.jpg" alt="Lincoln Original">
+                <p>Lincoln - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/obama.jpg" alt="Obama Original">
+                <p>Obama - original image</p>
+            </div>
+        </div>
+        
+        <h4>Hybrid Image Results (Obama + Lincoln):</h4>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 500px;">
+                <img src="processed_images/18_obama_lincoln_hybrid.png" alt="Hybrid Obama Lincoln" style="max-width: 100%; height: auto;">
+                <p>Obama + Lincoln hybrid image</p>
+            </div>
+        </div>
+        
+        <h4>Original Images (Lion + Tiger):</h4>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/lion.jpeg" alt="Lion Original">
+                <p>Lion - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/tiger.jpeg" alt="Tiger Original">
+                <p>Tiger - original image</p>
+            </div>
+        </div>
+        
+        <h4>Hybrid Image Results (Lion + Tiger):</h4>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 525px;">
+                <img src="processed_images/19_lion_tiger_hybrid.png" alt="Hybrid Lion Tiger">
+                <p>Lion + Tiger hybrid image</p>
+            </div>
+        </div>
+        
+        <h3>Part 2.3 & 2.4: Multi-Scale Blending</h3>
+        <p>Implementation of Gaussian and Laplacian pyramids for seamless image blending.</p>
+        
+        <div class="code-block">
+<pre>def gaussian_stack(img, ksize, levels):
+    stack = [img]
+    for i in range(1, levels):
+        last = stack[-1]
+        blurred = cv2.GaussianBlur(last, (ksize, ksize), 0)
+        stack.append(blurred.astype(np.float32))
+    return stack
+
+def laplacian_stack(img, ksize, levels):
+    g_stack = gaussian_stack(img, ksize, levels)
+    l_stack = []
+    for i in range(len(g_stack) - 1):
+        diff = g_stack[i] - g_stack[i + 1]
+        l_stack.append(diff.astype(np.float32))
+    l_stack.append(g_stack[-1])
+    return l_stack, g_stack</pre>
+        </div>
+        
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/apple.jpeg" alt="Apple Original">
+                <p>Apple - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/orange.jpeg" alt="Orange Original">
+                <p>Orange - original image</p>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h4>Multi-Scale Blending Process:</h4>
+            <p>The blending process uses Laplacian pyramids to blend images at multiple scales:</p>
+            <ol>
+                <li><strong>Gaussian Stack:</strong> Creates progressively blurred versions of each image</li>
+                <li><strong>Laplacian Stack:</strong> Computes differences between consecutive Gaussian levels</li>
+                <li><strong>Mask Application:</strong> Applies blending masks at each scale level</li>
+                <li><strong>Reconstruction:</strong> Sums the blended Laplacian levels to create final result</li>
+            </ol>
+        </div>
+        
+        <h4>Gaussian and Laplacian Stacks (Apple & Orange):</h4>
+        <h5>Apple Gaussian Stack:</h5>
+        <div class="image-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="image-container">
+                <img src="image_stacks/apple_gaussian_level_0.png" alt="Apple Gaussian Level 0">
+                <p>Level 0 (Original)</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_gaussian_level_1.png" alt="Apple Gaussian Level 1">
+                <p>Level 1</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_gaussian_level_2.png" alt="Apple Gaussian Level 2">
+                <p>Level 2</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_gaussian_level_3.png" alt="Apple Gaussian Level 3">
+                <p>Level 3</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_gaussian_level_4.png" alt="Apple Gaussian Level 4">
+                <p>Level 4</p>
+            </div>
+        </div>
+        
+        <h5>Orange Gaussian Stack:</h5>
+        <div class="image-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="image-container">
+                <img src="image_stacks/orange_gaussian_level_0.png" alt="Orange Gaussian Level 0">
+                <p>Level 0 (Original)</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_gaussian_level_1.png" alt="Orange Gaussian Level 1">
+                <p>Level 1</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_gaussian_level_2.png" alt="Orange Gaussian Level 2">
+                <p>Level 2</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_gaussian_level_3.png" alt="Orange Gaussian Level 3">
+                <p>Level 3</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_gaussian_level_4.png" alt="Orange Gaussian Level 4">
+                <p>Level 4</p>
+            </div>
+        </div>
+        
+        <h5>Apple Laplacian Stack:</h5>
+        <div class="image-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="image-container">
+                <img src="image_stacks/apple_laplacian_level_0.png" alt="Apple Laplacian Level 0">
+                <p>Level 0</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_laplacian_level_1.png" alt="Apple Laplacian Level 1">
+                <p>Level 1</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_laplacian_level_2.png" alt="Apple Laplacian Level 2">
+                <p>Level 2</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_laplacian_level_3.png" alt="Apple Laplacian Level 3">
+                <p>Level 3</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/apple_laplacian_level_4.png" alt="Apple Laplacian Level 4">
+                <p>Level 4</p>
+            </div>
+        </div>
+        
+        <h5>Orange Laplacian Stack:</h5>
+        <div class="image-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="image-container">
+                <img src="image_stacks/orange_laplacian_level_0.png" alt="Orange Laplacian Level 0">
+                <p>Level 0</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_laplacian_level_1.png" alt="Orange Laplacian Level 1">
+                <p>Level 1</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_laplacian_level_2.png" alt="Orange Laplacian Level 2">
+                <p>Level 2</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_laplacian_level_3.png" alt="Orange Laplacian Level 3">
+                <p>Level 3</p>
+            </div>
+            <div class="image-container">
+                <img src="image_stacks/orange_laplacian_level_4.png" alt="Orange Laplacian Level 4">
+                <p>Level 4</p>
+            </div>
+        </div>
+        
+        <h4>Multi-Scale Blending Results:</h4>
+        <h5>Original Images (Apple + Orange):</h5>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/apple.jpeg" alt="Apple Original">
+                <p>Apple - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/orange.jpeg" alt="Orange Original">
+                <p>Orange - original image</p>
+            </div>
+        </div>
+        
+        <h5>Apple + Orange Blended Image:</h5>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 450px;">
+                <img src="processed_images/22_apple_orange_blended.png" alt="Apple Orange Blended" style="max-width: 100%; height: auto;">
+                <p>Apple + Orange blended image</p>
+            </div>
+        </div>
+        
+        <h5>Original Images (Basketball + Earth):</h5>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/basketball.jpg" alt="Basketball Original">
+                <p>Basketball - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/earth.jpeg" alt="Earth Original">
+                <p>Earth - original image</p>
+            </div>
+        </div>
+        
+        <h5>Basketball + Earth Blended Image:</h5>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 450px;">
+                <img src="processed_images/23_basketball_earth_blended.png" alt="Basketball Earth Blended" style="max-width: 100%; height: auto;">
+                <p>Basketball + Earth blended image</p>
+            </div>
+        </div>
+        
+        <h5>Original Images (Human + Monkey):</h5>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/human.jpeg" alt="Human Original">
+                <p>Human - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/monkey.jpeg" alt="Monkey Original">
+                <p>Monkey - original image</p>
+            </div>
+        </div>
+        
+        <h5>Human + Monkey Blended Image:</h5>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 450px;">
+                <img src="processed_images/24_human_monkey_blended.png" alt="Human Monkey Blended" style="max-width: 100%; height: auto;">
+                <p>Human + Monkey blended image</p>
+            </div>
+        </div>
+        
+        <div class="process-step">
+            <h4>Irregular Mask Blending:</h4>
+            <p>For irregular masks, I implemented a polygon drawing interface that allows users to create custom blending regions. This enables more creative and natural-looking blends that follow object boundaries rather than simple straight lines.</p>
+        </div>
+        
+        <h4>Mask Creation Process:</h4>
+        <p>Users can create custom masks by tracing around objects they want to blend. The interface allows:</p>
+        <ul>
+            <li><strong>Single click:</strong> Add a point around the object boundary</li>
+            <li><strong>Double click:</strong> Close the polygon to complete the mask by connecting all the points</li>
+            <li><strong>Press 'S':</strong> Save the mask for blending</li>
+            <li><strong>Press 'ESC':</strong> Cancel the mask creation</li>
+        </ul>
+        
+        <div class="image-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="image-container" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <img src="processed_images/eye-trace.png" alt="Eye Trace Example" style="max-width: 350px; height: auto;">
+                <p>Eye tracing example - showing polygon points around the eye</p>
+            </div>
+            <div class="image-container" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <img src="processed_images/E.T. trace.png" alt="ET Trace Example" style="max-width: 350px; height: auto;">
+                <p>E.T. tracing example - showing polygon points around E.T.'s bike</p>
+            </div>
+        </div>
+        
+        <h4>Irregular Mask Blending Results:</h4>
+        <h5>Original Images (Eye + Triangle):</h5>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/eye.jpg" alt="Eye Original">
+                <p>Eye - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/triangle.jpg" alt="Triangle Original">
+                <p>Triangle - original image</p>
+            </div>
+        </div>
+        
+        <h5>Eye + Triangle Blended Image:</h5>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 450px;">
+                <img src="processed_images/25_eye_triangle_blended.png" alt="Eye Triangle Blended" style="max-width: 100%; height: auto;">
+                <p>Eye + Triangle irregular blend</p>
+            </div>
+        </div>
+        
+        <h5>Original Images (E.T. + Moon):</h5>
+        <div class="image-grid">
+            <div class="image-container">
+                <img src="images/spline/ET.jpeg" alt="ET Original">
+                <p>E.T. - original image</p>
+            </div>
+            <div class="image-container">
+                <img src="images/spline/moon.jpeg" alt="Moon Original">
+                <p>Moon - original image</p>
+            </div>
+        </div>
+        
+        <h5>E.T. + Moon Blended Image:</h5>
+        <div class="image-grid" style="justify-content: center; display: flex;">
+            <div class="image-container" style="max-width: 450px;">
+                <img src="processed_images/26_ET_moon_blended.png" alt="ET Moon Blended" style="max-width: 100%; height: auto;">
+                <p>E.T. + Moon irregular blend</p>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h4>Technical Implementation Notes:</h4>
+            <ul>
+                <li><strong>Image Alignment:</strong> Critical for hybrid images and blending - misalignment creates artifacts</li>
+                <li><strong>Frequency Separation:</strong> Proper cutoff frequencies are essential for effective hybrid images</li>
+                <li><strong>Multi-Scale Processing:</strong> Laplacian pyramids enable seamless blending across different image scales</li>
+                <li><strong>Mask Design:</strong> Irregular masks provide more custom blending boundaries</li>
+                <li><strong>Parameter Tuning:</strong> Kernel sizes, blur amounts, and blending ratios significantly affect final results</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #3498db;">
+            <p><em>Computer Vision Project - Fun with Filters and Frequencies!</em></p>
+        </div>
+    </div>
+</body>
+</html>
