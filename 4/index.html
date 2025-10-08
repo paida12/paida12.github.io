@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project 3: Image Warping and Mosaicing</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #555;
+            margin-top: 25px;
+        }
+        .section {
+            background: white;
+            padding: 30px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .image-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .image-caption {
+            font-style: italic;
+            color: #666;
+            margin-top: 10px;
+            font-size: 0.95em;
+            text-align: center;
+        }
+        .comparison {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .comparison-item {
+            flex: 1;
+            min-width: 300px;
+            text-align: center;
+        }
+        .comparison-item img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .code-block {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+        }
+        .matrix {
+            font-family: 'Courier New', monospace;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        p {
+            text-align: justify;
+            color: #444;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Project 3: Image Warping and Mosaicing</h1>
+    
+    <div class="section">
+        <h2>Overview</h2>
+        <p>
+            This project explores homography-based image warping and the creation of image mosaics. 
+            We implement projective transformations to warp images, rectify planar surfaces, and blend 
+            multiple images together to create seamless panoramas. The key components include computing 
+            homography matrices from point correspondences, implementing image warping with different 
+            interpolation methods, and creating mosaics with smooth blending.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Part 1: Projective Transformations Between Image Pairs</h2>
+        <p>
+            We begin by demonstrating projective transformations between two images taken with a fixed center 
+            of projection (i.e., rotating the camera). These transformations preserve straight lines but not 
+            necessarily angles or distances, making them ideal for panorama stitching. Below are two sets of 
+            image pairs that we will combine into seamless mosaics using homography-based warping.
+        </p>
+
+        <h3>Image Set 1: Perspective Views</h3>
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="images/left_perspective.jpg" alt="Left perspective image">
+                <p class="image-caption">Left perspective view (reference image)</p>
+            </div>
+            <div class="comparison-item">
+                <img src="images/right_perspective.jpg" alt="Right perspective image">
+                <p class="image-caption">Right perspective view (camera rotated right)</p>
+            </div>
+        </div>
+        <p>
+            These images were captured by rotating the camera around its center of projection. 
+            We will align and blend them to create a wider field of view panorama.
+        </p>
+
+        <h3>Image Set 2: Street Scene</h3>
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="images/left_street.jpg" alt="Left street image">
+                <p class="image-caption">Left street view</p>
+            </div>
+            <div class="comparison-item">
+                <img src="images/right_street.jpg" alt="Right street image">
+                <p class="image-caption">Right street view (camera rotated right)</p>
+            </div>
+        </div>
+        <p>
+            Another set of images with overlapping content that will be combined into a mosaic. 
+            The homography transformation will warp one image to align with the other before blending.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Part 2: Computing Homography Matrix</h2>
+        
+        <h3>Point Correspondences Visualization</h3>
+        <p>
+            To compute the homography matrix, we first manually select corresponding points between image pairs. 
+            Here are the 15 point correspondences for the perspective image pair:
+        </p>
+        
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/01_correspondences_left.png" alt="Left image correspondences">
+                <p class="image-caption">Left image with 15 labeled correspondence points</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/01_correspondences_right.png" alt="Right image correspondences">
+                <p class="image-caption">Right image with matching correspondence points</p>
+            </div>
+        </div>
+        <p>
+            Each numbered point marks the same physical location in both images. These correspondences form 
+            the basis for computing the homography transformation.
+        </p>
+        
+        <h3>Implementation of computeH(im1_pts, im2_pts)</h3>
+        <p>
+            The homography matrix <strong>H</strong> defines the projective transformation between two image planes. 
+            For a point (x, y) in the first image mapping to (x', y') in the second image, the homography is expressed as:
+        </p>
+        
+        <div class="code-block">
+            [x']       [h00  h01  h02]   [x]
+            [y']  =    [h10  h11  h12] · [y]
+            [1 ]       [h20  h21  1.0]   [1]
+        </div>
+        
+        <p>
+            After homogeneous division, this gives us:
+        </p>
+        <div class="code-block">
+            x' = (h00·x + h01·y + h02) / (h20·x + h21·y + 1)
+            y' = (h10·x + h11·y + h12) / (h20·x + h21·y + 1)
+        </div>
+
+        <h3>System of Equations</h3>
+        <p>
+            Rearranging to eliminate division, each point correspondence gives us two linear equations:
+        </p>
+        <div class="code-block">
+            h00·x + h01·y + h02 - h20·x·x' - h21·y·x' = x'
+            h10·x + h11·y + h12 - h20·x·y' - h21·y·y' = y'
+        </div>
+        
+        <p>
+            With <strong>n</strong> point correspondences, we get a system of <strong>2n equations</strong> 
+            with <strong>8 unknowns</strong> (h00 through h21). This overdetermined system is solved using 
+            least squares (np.linalg.lstsq) to find the best-fit homography matrix.
+        </p>
+
+        <div class="highlight">
+            <strong>Matrix Structure:</strong> For each point pair (x<sub>i</sub>, y<sub>i</sub>) → (x'<sub>i</sub>, y'<sub>i</sub>), 
+            we construct two rows of the matrix equation <strong>Ah = b</strong>, where <strong>h</strong> is the vector 
+            [h00, h01, h02, h10, h11, h12, h20, h21]<sup>T</sup>.
+        </div>
+
+        <h3>Recovered Homography Matrix</h3>
+        <p>
+            The homography matrix computed from the 15 point correspondences between the perspective images enables 
+            accurate transformation from one viewpoint to another. This matrix captures the rotation and perspective 
+            effects between the two camera positions.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Part 3: Image Warping with Inverse Mapping</h2>
+        
+        <h3>Warping Implementation</h3>
+        <p>
+            Two warping functions were implemented using <strong>inverse warping</strong>:
+        </p>
+        <ul>
+            <li><strong>warpImageNearestNeighbor(im, H):</strong> Uses nearest neighbor interpolation for speed</li>
+            <li><strong>warpImageBilinear(im, H):</strong> Uses bilinear interpolation for smoother results</li>
+        </ul>
+        
+        <p>
+            <strong>Why inverse warping?</strong> Instead of mapping source pixels to destination (which can leave holes), 
+            we iterate through each destination pixel and compute its corresponding source location using H<sup>-1</sup>. 
+            This guarantees every output pixel gets a value.
+        </p>
+
+        <h3>Warping Results</h3>
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/02_original_left.png" alt="Original image">
+                <p class="image-caption">Original left image (before warping)</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/03_warped_nn.png" alt="Nearest neighbor warping">
+                <p class="image-caption">Warped with nearest neighbor interpolation</p>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/04_warped_bilinear.png" alt="Bilinear warping">
+                <p class="image-caption">Warped with bilinear interpolation (smoother)</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/05_mask_bilinear.png" alt="Valid pixel mask">
+                <p class="image-caption">Valid pixel mask showing warped region</p>
+            </div>
+        </div>
+
+        <p>
+            <strong>Comparison:</strong> Bilinear interpolation produces smoother edges and reduces aliasing artifacts 
+            compared to nearest neighbor, though at the cost of slightly more computation time.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>Part 4: Image Rectification</h2>
+        
+        <h3>Rectification Process</h3>
+        <p>
+            Rectification transforms a planar surface viewed at an angle into a frontal-parallel view. 
+            By selecting four corners of a rectangular region in the distorted image and mapping them to 
+            a square in the output, we can "un-distort" the perspective.
+        </p>
+
+        <h3>Example 1: Poster Rectification</h3>
+        <div class="image-container">
+            <img src="final_images/06_poster_original.png" alt="Poster original">
+            <p class="image-caption">
+                <strong>Figure 2:</strong> Original poster image with selected rectangle corners (TL, TR, BR, BL)
+            </p>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/07_poster_rectified_nn.png" alt="Poster rectified NN">
+                <p class="image-caption">Rectified with nearest neighbor</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/08_poster_rectified_bilinear.png" alt="Poster rectified bilinear">
+                <p class="image-caption">Rectified with bilinear interpolation</p>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/09_poster_cropped_nn.png" alt="Poster cropped NN">
+                <p class="image-caption">Cropped rectified region (nearest neighbor)</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/10_poster_cropped_bilinear.png" alt="Poster cropped bilinear">
+                <p class="image-caption">Cropped rectified region (bilinear) - final result</p>
+            </div>
+        </div>
+
+        <h3>Example 2: Floor Tile Rectification</h3>
+        <div class="image-container">
+            <img src="final_images/11_floor_original.png" alt="Floor original">
+            <p class="image-caption">
+                <strong>Figure 3:</strong> Floor tiles viewed at an angle with selected rectangle
+            </p>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/12_floor_rectified_nn.png" alt="Floor rectified NN">
+                <p class="image-caption">Rectified with nearest neighbor</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/13_floor_rectified_bilinear.png" alt="Floor rectified bilinear">
+                <p class="image-caption">Rectified with bilinear interpolation</p>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-item">
+                <img src="final_images/14_floor_cropped_nn.png" alt="Floor cropped NN">
+                <p class="image-caption">Cropped rectified region (nearest neighbor)</p>
+            </div>
+            <div class="comparison-item">
+                <img src="final_images/15_floor_cropped_bilinear.png" alt="Floor cropped bilinear">
+                <p class="image-caption">Cropped rectified region (bilinear)</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Part 5: Image Mosaics</h2>
+        
+        <h3>Mosaic Creation Procedure</h3>
+        <p>
+            Creating seamless mosaics involves several steps:
+        </p>
+        <ol>
+            <li><strong>Point Correspondence:</strong> Manually select matching points between images</li>
+            <li><strong>Homography Computation:</strong> Compute transformation matrix using computeH()</li>
+            <li><strong>Canvas Sizing:</strong> Calculate output dimensions to fit all warped images</li>
+            <li><strong>Warping:</strong> Warp each image to the reference frame using bilinear interpolation</li>
+            <li><strong>Blending:</strong> Use weighted alpha blending with distance-based feathering to reduce seams</li>
+        </ol>
+
+        <div class="highlight">
+            <strong>Blending Strategy:</strong> We use a distance-based alpha mask where pixel weights decrease 
+            near image boundaries. This creates a smooth transition in overlap regions, effectively hiding seams. 
+            Each pixel's final value is the weighted average of contributions from all images.
+        </div>
+
+        <h3>Mosaic 1: Perspective Views</h3>
+        <div class="image-container">
+            <img src="final_images/18_perspective_mosaic.png" alt="Perspective mosaic">
+            <p class="image-caption">
+                <strong>Figure 4:</strong> Mosaic combining left and right perspective views. The weighted blending 
+                creates a seamless panorama despite the different viewpoints.
+            </p>
+        </div>
+
+        <div class="image-container">
+            <img src="final_images/19_perspective_mosaic_alt.png" alt="Alternative perspective mosaic">
+            <p class="image-caption">
+                <strong>Figure 5:</strong> Alternative mosaic using right image as reference frame
+            </p>
+        </div>
+
+        <h3>Mosaic 2: Street Scene</h3>
+        <div class="image-container">
+            <img src="final_images/20_street_correspondences.png" alt="Street correspondences">
+            <p class="image-caption">
+                <strong>Figure 6:</strong> Point correspondences for street scene images
+            </p>
+        </div>
+
+        <div class="image-container">
+            <img src="final_images/21_street_mosaic.png" alt="Street mosaic">
+            <p class="image-caption">
+                <strong>Figure 7:</strong> Street scene mosaic showing source images and final blended result. 
+                The feathering at boundaries creates a natural-looking merge without visible seams.
+            </p>
+        </div>
+
+        <h3>Mosaic 3: Sign Panorama</h3>
+        <div class="image-container">
+            <img src="final_images/22_sign_source_images.png" alt="Sign source images">
+            <p class="image-caption">
+                <strong>Figure 8:</strong> Source images for sign mosaic
+            </p>
+        </div>
+
+        <div class="image-container">
+            <img src="final_images/23_sign_correspondences.png" alt="Sign correspondences">
+            <p class="image-caption">
+                <strong>Figure 9:</strong> 8 point correspondences between sign images
+            </p>
+        </div>
+
+        <div class="image-container">
+            <img src="final_images/24_sign_mosaic.png" alt="Sign mosaic">
+            <p class="image-caption">
+                <strong>Figure 10:</strong> Final sign mosaic demonstrating successful alignment and blending. 
+                The weighted averaging eliminates harsh boundaries in the overlap region.
+            </p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Blending Implementation Details</h2>
+        
+        <h3>Alpha Mask Generation</h3>
+        <p>
+            The alpha mask is created using a distance transform from image edges:
+        </p>
+        <div class="code-block">
+def create_alpha_mask(shape, feather_size=50):
+    # Compute distance to nearest edge for each pixel
+    dist_to_edge = min(dist_top, dist_bottom, dist_left, dist_right)
+    # Normalize by feather size to create smooth falloff
+    alpha = clip(dist_to_edge / feather_size, 0, 1)
+    return alpha
+        </div>
+
+        <h3>Weighted Averaging</h3>
+        <p>
+            Each warped image contributes to the final mosaic proportionally to its alpha value:
+        </p>
+        <div class="code-block">
+# Accumulate weighted pixel values
+mosaic += warped_image * alpha_mask
+weight_map += alpha_mask
+
+# Normalize to get final averaged result
+mosaic = mosaic / weight_map
+        </div>
+
+        <p>
+            This approach ensures smooth transitions in overlap regions while maintaining full intensity 
+            in non-overlapping areas. The feather size of 50 pixels provides gradual blending that 
+            effectively hides seams and brightness differences between images.
+        </p>
+    </div>
+
+    <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #888;">
+        <p>CS 180 - Computer Vision and Computational Photography | Project 3: Image Warping and Mosaicing</p>
+    </footer>
+</body>
+</html>
+
