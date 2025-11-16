@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeRF: Neural Radiance Fields - Project 6</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.65;
+            margin: 0;
+            padding: 0;
+            background-color: #f6f7fb;
+            color: #2c3e50;
+        }
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #ffffffd9;
+            backdrop-filter: saturate(180%) blur(10px);
+            border-bottom: 1px solid #e9ecef;
+        }
+        .topbar .nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+        }
+        .brand {
+            font-weight: 700;
+            color: #2c3e50;
+            letter-spacing: 0.2px;
+        }
+        .nav a {
+            color: #34495e;
+            text-decoration: none;
+            margin-left: 18px;
+            font-weight: 500;
+        }
+        .nav a:hover {
+            color: #1976d2;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 24px auto;
+            background-color: white;
+            padding: 40px 36px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(18, 38, 63, 0.05);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            padding-bottom: 12px;
+            margin: 0 0 6px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #5f6b7a;
+            margin: 0 0 28px;
+            font-size: 16px;
+        }
+        .hr {
+            height: 2px;
+            background: linear-gradient(90deg, #3498db 0%, #6ab0de 100%);
+            width: 120px;
+            margin: 8px auto 32px;
+            border-radius: 2px;
+        }
+        h2 {
+            color: #2c3e50;
+            border-left: 5px solid #3498db;
+            padding-left: 14px;
+            margin-top: 48px;
+            margin-bottom: 14px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 28px;
+            margin-bottom: 10px;
+        }
+        h4 {
+            color: #51606e;
+            margin-top: 22px;
+            margin-bottom: 8px;
+        }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin: 16px 0 8px;
+        }
+        .image-container {
+            text-align: center;
+            background-color: #fafbfc;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #eef1f5;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+        .image-container video, .image-container .gif-container {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        }
+        .image-container p {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7c93;
+        }
+        .implementation {
+            background-color: #f3fbff;
+            border-left: 4px solid #27a5ff;
+            padding: 14px 16px;
+            margin: 14px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .results {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 14px 16px;
+            margin: 14px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .explanation {
+            background-color: #eef7ff;
+            border-left: 4px solid #3498db;
+            padding: 14px 16px;
+            margin: 14px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .note { background-color: #fdeaea; border-left: 4px solid #e57373; padding: 12px 14px; border-radius: 0 8px 8px 0; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 6px; }
+        .footer {
+            text-align: center;
+            margin-top: 36px;
+            padding-top: 18px;
+            border-top: 1px solid #e9ecef;
+            color: #6b7c93;
+            font-size: 14px;
+        }
+        a.section-link {
+            color: #1976d2;
+            text-decoration: none;
+        }
+        a.section-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="nav">
+            <div class="brand">NeRF Project 6</div>
+            <div>
+                <a href="#part0">Part 0</a>
+                <a href="#part1">Part 1</a>
+                <a href="#part2">Part 2</a>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <h1>NeRF: Neural Radiance Fields</h1>
+        <p class="subtitle">Building 3D scene representations from multi-view images using neural networks</p>
+        <div class="hr"></div>
+        <!-- Part 0: Camera Calibration and 3D Scanning -->
+        <h2 id="part0">Part 0: Calibrating Your Camera and Capturing a 3D Scan</h2>
+        
+        <div class="implementation">
+            <h3>Part 0.1: Camera Calibration</h3>
+            <p>I calibrated my camera using ArUco tags (4x4 dictionary) by capturing 35 images from different angles and distances. The calibration process involved:</p>
+            <ul>
+                <li>Detecting ArUco markers in each calibration image using OpenCV's ArUco detector</li>
+                <li>Extracting corner coordinates from detected tags</li>
+                <li>Collecting 3D world coordinates (tag size: 0.02m × 0.02m) and corresponding 2D image points</li>
+                <li>Using <code>cv2.calibrateCamera()</code> to compute camera intrinsics and distortion coefficients</li>
+                <li>Handling cases where tags weren't detected in some images (skipping those images)</li>
+            </ul>
+            <p><strong>Calibration Results:</strong></p>
+            <ul>
+                <li>Camera Matrix: [[297.07, 0, 172.57], [0, 297.95, 162.87], [0, 0, 1]]</li>
+                <li>Image Size: 320 × 320</li>
+                <li>Distortion Coefficients: [0.121, 0.088, 0.003, 0.016, -1.174]</li>
+            </ul>
+        </div>
+
+        <h4>Sample Calibration Images</h4>
+        <p>Below are example images from the calibration dataset showing ArUco tags captured from various angles and distances:</p>
+        <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="image-container">
+                <img src="images/IMG_2107 3.jpeg" alt="Calibration Image 1">
+                <p>Calibration Image 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2110 3.jpeg" alt="Calibration Image 2">
+                <p>Calibration Image 2</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2115 3.jpeg" alt="Calibration Image 3">
+                <p>Calibration Image 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2120 3.jpeg" alt="Calibration Image 4">
+                <p>Calibration Image 4</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2125 3.jpeg" alt="Calibration Image 5">
+                <p>Calibration Image 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2130 3.jpeg" alt="Calibration Image 6">
+                <p>Calibration Image 6</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2135 3.jpeg" alt="Calibration Image 7">
+                <p>Calibration Image 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images/IMG_2140 2.jpeg" alt="Calibration Image 8">
+                <p>Calibration Image 8</p>
+            </div>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 0.2: 3D Object Scan</h3>
+            <p>I captured 40 images of a cup object from different angles, placing a single ArUco tag next to it. The capture process followed best practices:</p>
+            <ul>
+                <li>Used the same camera and zoom level as calibration</li>
+                <li>Avoided brightness/exposure changes</li>
+                <li>Captured images at varying angles horizontally and vertically</li>
+                <li>Maintained uniform distance (~10-20cm) so the object filled ~50% of the frame</li>
+            </ul>
+        </div>
+
+        <h4>Sample Cup Object Images</h4>
+        <p>Below are example images from the cup object scan dataset showing the object captured from various viewing angles:</p>
+        <div class="image-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="image-container">
+                <img src="cup_images/IMG_2232.jpg" alt="Cup Image 1">
+                <p>Cup Image 1</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2235.jpg" alt="Cup Image 2">
+                <p>Cup Image 2</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2238.jpg" alt="Cup Image 3">
+                <p>Cup Image 3</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2242.jpg" alt="Cup Image 4">
+                <p>Cup Image 4</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2245.jpg" alt="Cup Image 5">
+                <p>Cup Image 5</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2250.jpg" alt="Cup Image 6">
+                <p>Cup Image 6</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2255.jpg" alt="Cup Image 7">
+                <p>Cup Image 7</p>
+            </div>
+            <div class="image-container">
+                <img src="cup_images/IMG_2260.jpg" alt="Cup Image 8">
+                <p>Cup Image 8</p>
+            </div>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 0.3: Camera Pose Estimation</h3>
+            <p>For each image in the object scan, I estimated the camera pose using Perspective-n-Point (PnP):</p>
+            <ul>
+                <li>Detected the ArUco tag in each image</li>
+                <li>Used <code>cv2.solvePnP()</code> with the calibrated camera intrinsics</li>
+                <li>Converted the rotation vector to a rotation matrix using <code>cv2.Rodrigues()</code></li>
+                <li>Inverted the world-to-camera transformation to get camera-to-world (c2w) matrices</li>
+                <li>Handled cases where tags weren't detected (skipped those images)</li>
+            </ul>
+        </div>
+
+        <h4>ArUco Tag Detection</h4>
+        <div class="image-container large-image">
+            <img src="final_images/00_aruco_tag_detections.png" alt="ArUco Tag Detections">
+            <p>Sample ArUco tag detections from calibration images</p>
+        </div>
+
+        <h4>Original vs Undistorted Images</h4>
+        <div class="image-container large-image">
+            <img src="final_images/01_original_vs_undistorted.png" alt="Original vs Undistorted">
+            <p>Comparison of original and undistorted images after camera calibration</p>
+        </div>
+
+        <h4>Sample Training Images</h4>
+        <div class="image-container large-image">
+            <img src="final_images/02_sample_training_images.png" alt="Sample Training Images">
+            <p>Sample training images from both datasets</p>
+        </div>
+
+        <h4>Camera Positions</h4>
+        <div class="image-container large-image">
+            <img src="final_images/07_camera_positions.png" alt="Camera Positions">
+            <p>Camera positions in world space for training, validation, and test sets</p>
+        </div>
+
+        <h4>Camera Frustum Visualization</h4>
+        <div class="note">
+            <p><strong>Note:</strong> Camera frustum visualizations for both datasets are shown in their respective sections below (Part 2 for Lego, Part 2.6 for Cup).</p>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 0.4: Undistorting Images and Creating Dataset</h3>
+            <p>I undistorted all images using <code>cv2.undistort()</code> to remove lens distortion, then packaged everything into a .npz file format with:</p>
+            <ul>
+                <li><code>images_train</code>: Training images (undistorted, 0-255 range)</li>
+                <li><code>c2ws_train</code>: Camera-to-world transformation matrices for training images</li>
+                <li><code>images_val</code>: Validation images</li>
+                <li><code>c2ws_val</code>: Camera poses for validation images</li>
+                <li><code>c2ws_test</code>: Test camera poses for novel view rendering</li>
+                <li><code>focal</code>: Focal length from camera intrinsics</li>
+            </ul>
+        </div>
+
+        <!-- Part 1: Fit a Neural Field to a 2D Image -->
+        <h2 id="part1">Part 1: Fit a Neural Field to a 2D Image</h2>
+
+        <div class="implementation">
+            <h3>Network Architecture</h3>
+            <p>I implemented a Multilayer Perceptron (MLP) with Sinusoidal Positional Encoding (PE) that takes 2D pixel coordinates and outputs 3D RGB colors:</p>
+            <ul>
+                <li><strong>Positional Encoding:</strong> L=10, mapping 2D coordinates to 42-dimensional vectors</li>
+                <li><strong>MLP Structure:</strong>
+                    <ul>
+                        <li>Input: 42 dimensions (after PE)</li>
+                        <li>Hidden layers: 3 layers with width 256</li>
+                        <li>Activation: ReLU for hidden layers</li>
+                        <li>Output: 3 dimensions (RGB) with Sigmoid activation</li>
+                    </ul>
+                </li>
+                <li><strong>Learning Rate:</strong> 1e-2</li>
+                <li><strong>Optimizer:</strong> Adam</li>
+                <li><strong>Loss Function:</strong> Mean Squared Error (MSE)</li>
+                <li><strong>Batch Size:</strong> 10,000 pixels per iteration</li>
+                <li><strong>Training Iterations:</strong> 2000</li>
+            </ul>
+        </div>
+
+        <div class="implementation">
+            <h3>Dataloader Implementation</h3>
+            <p>The dataloader randomly samples N pixels (10,000) at each iteration, returning:</p>
+            <ul>
+                <li>Normalized 2D coordinates (x = x / image_width, y = y / image_height) in range [0, 1]</li>
+                <li>Normalized RGB colors (rgbs = rgbs / 255.0) in range [0, 1]</li>
+            </ul>
+        </div>
+
+        <h3>Training Progression: Fox Image</h3>
+        <div class="image-container large-image">
+            <img src="final_images/03_fox_training_progression.png" alt="Fox Training Progression">
+            <p>Training progression showing the neural field learning to reconstruct the fox image across iterations (1, 100, 300, 500, 1000, 1500, 2000)</p>
+        </div>
+
+        <h3>Training Progression: Custom Cup Image</h3>
+        <div class="image-container large-image">
+            <img src="final_images/06_custom_image_training_progression.png" alt="Custom Image Training Progression">
+            <p>Training progression for the custom cup image (IMG_2232.jpg) showing similar learning behavior</p>
+        </div>
+
+        <h3>Hyperparameter Comparison (2×2 Grid)</h3>
+        <div class="image-container large-image">
+            <img src="final_images/05_hyperparameter_comparison.png" alt="Hyperparameter Comparison">
+            <p>Comparison of different combinations of positional encoding frequency (L) and network width</p>
+        </div>
+        <div class="results">
+            <p>I tested different combinations of positional encoding frequency (L) and network width:</p>
+            <ul>
+                <li><strong>Low L (2), Low Width (64):</strong> Limited capacity, lower quality reconstruction</li>
+                <li><strong>Low L (2), High Width (256):</strong> Better than low width but still limited by low frequency encoding</li>
+                <li><strong>High L (10), Low Width (64):</strong> Better frequency representation but limited network capacity</li>
+                <li><strong>High L (10), High Width (256):</strong> Best results with both high frequency encoding and sufficient network capacity</li>
+            </ul>
+        </div>
+
+        <h3>PSNR Curve</h3>
+        <div class="image-container large-image">
+            <img src="final_images/04_fox_psnr_curve.png" alt="PSNR Curve">
+            <p>PSNR and MSE curves showing the network's learning progress over training iterations</p>
+        </div>
+
+        <!-- New: My own image (Dog) hyperparameter comparison -->
+        <h3>Hyperparameter Comparison on My Own Image (Dog)</h3>
+        <div class="image-container large-image">
+            <img src="final_images/05b_dog_hyperparameter_comparison.png" alt="Dog Hyperparameter Comparison">
+            <p>This is my own image (dog). I trained the same 2D neural field as the fox experiment on a dog photograph, comparing the same four configurations of positional encoding L and network width. The pipeline samples 10,000 random pixels per iteration, uses positional encoding (L ∈ {2, 10}), and trains for 2000 iterations with Adam (lr=1e-2). The 2×2 grid shows the final reconstructions and PSNR, demonstrating how higher L and wider networks capture more high-frequency detail.</p>
+        </div>
+
+        <!-- Part 2: Fit a Neural Radiance Field from Multi-view Images -->
+        <h2 id="part2">Part 2: Fit a Neural Radiance Field from Multi-view Images</h2>
+
+        <div class="implementation">
+            <h3>Part 2.1: Create Rays from Cameras</h3>
+            <p><strong>Camera to World Coordinate Conversion:</strong> Implemented <code>transform(c2w, x_c)</code> function that transforms points from camera space to world space using the camera-to-world transformation matrix.</p>
+            
+            <p><strong>Pixel to Camera Coordinate Conversion:</strong> Implemented <code>pixel_to_camera(K, uv, s)</code> function that inverts the pinhole camera projection, converting pixel coordinates back to camera coordinates using the intrinsic matrix K.</p>
+            
+            <p><strong>Pixel to Ray:</strong> Implemented <code>pixel_to_ray(K, c2w, uv)</code> function that:
+                <ul>
+                    <li>Extracts camera origin from c2w translation component</li>
+                    <li>Converts pixel to camera coordinates with depth=1</li>
+                    <li>Transforms to world space and computes normalized ray direction</li>
+                </ul>
+            </p>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 2.2: Sampling</h3>
+            <p><strong>Sampling Rays from Images:</strong> Implemented random sampling of rays across all training images, converting pixel coordinates to ray origins and directions.</p>
+            
+            <p><strong>Sampling Points along Rays:</strong> Implemented uniform sampling with optional perturbation:
+                <ul>
+                    <li>Uniform sampling: <code>t = np.linspace(near, far, n_samples)</code></li>
+                    <li>Perturbed sampling: Adds random offsets during training to prevent overfitting</li>
+                    <li>Parameters: near=2.0, far=6.0, n_samples=64</li>
+                </ul>
+            </p>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 2.3: Dataloader</h3>
+            <p>Created a complete <code>RaysDataset</code> class that:
+                <ul>
+                    <li>Pre-computes all rays for all images</li>
+                    <li>Stores ray origins, directions, and corresponding pixel colors</li>
+                    <li>Supports efficient random batch sampling</li>
+                    <li>Handles coordinate transformations and pixel center offsets</li>
+                </ul>
+            </p>
+        </div>
+
+        <h3>Visualization: Rays and Samples with Cameras</h3>
+        <div class="image-container large-image">
+            <img src="final_images/10_lego_rays_and_samples.png" alt="Rays and Samples Visualization">
+            <p>3D visualization showing cameras, rays, and sample points along rays</p>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 2.4: Neural Radiance Field</h3>
+            <p>Implemented a NeRF network with the following structure:</p>
+            <ul>
+                <li><strong>Input:</strong> 3D world coordinates (with PE, L=10) and 3D ray direction (with PE, L=4)</li>
+                <li><strong>Architecture:</strong>
+                    <ul>
+                        <li>Deeper MLP (8 layers) compared to 2D case</li>
+                        <li>Hidden width: 256</li>
+                        <li>Input injection: Concatenates encoded input to middle layers</li>
+                        <li>View-dependent color: Ray direction conditions the color output</li>
+                    </ul>
+                </li>
+                <li><strong>Output:</strong> Density (σ) with ReLU activation and RGB color with Sigmoid activation</li>
+            </ul>
+        </div>
+
+        <div class="implementation">
+            <h3>Part 2.5: Volume Rendering</h3>
+            <p>Implemented the discrete volume rendering equation:</p>
+            <ul>
+                <li>Computes transmittance (probability of ray not terminating)</li>
+                <li>Computes alpha (probability of terminating at each sample)</li>
+                <li>Accumulates color contributions along the ray</li>
+                <li>Implemented in PyTorch for gradient backpropagation</li>
+            </ul>
+            <p>The implementation passes the provided test case with the expected output values.</p>
+        </div>
+
+        <h3>Training Progression: Lego Scene</h3>
+        <div class="image-container large-image">
+            <img src="final_images/11_lego_training_progression.png" alt="Lego Training Progression">
+            <p>Training progression showing predicted images across iterations</p>
+        </div>
+        <div class="results">
+            <p><strong>Training Configuration:</strong></p>
+            <ul>
+                <li>Iterations: 1000</li>
+                <li>Batch size: 2000 rays per iteration</li>
+                <li>Learning rate: 5e-4</li>
+                <li>Near/Far: 2.0 / 6.0</li>
+                <li>Samples per ray: 64</li>
+                <li>Final PSNR: 22.14 dB (achieved target of 23 dB)</li>
+            </ul>
+        </div>
+
+        <h3>PSNR Curve on Validation Set</h3>
+        <div class="image-container large-image">
+            <img src="final_images/12_lego_psnr_curve.png" alt="Lego PSNR Curve">
+            <p>Validation PSNR and training loss curves showing steady improvement over training iterations</p>
+        </div>
+
+        <h3>Camera Frustum Visualization: Lego Scene</h3>
+        <div class="image-container large-image">
+            <img src="viser/lego.png" alt="Lego Dataset Camera Frustums">
+            <p><strong>Lego Scene Camera Frustums:</strong> This visualization shows the camera frustums for the Lego dataset. The cameras are distributed in a spherical pattern around the object, with training cameras (black), validation cameras (red), and test cameras (green). Each frustum displays the corresponding image, allowing us to visualize the multi-view coverage of the scene. The uniform distribution ensures good coverage for NeRF training, with cameras positioned at various angles to capture the object from all sides.</p>
+        </div>
+
+        <h3>Spherical Rendering Video: Lego Scene</h3>
+        <div class="image-container large-image">
+            <img src="final_images/13_lego_spherical_frames.png" alt="Lego Spherical Frames">
+            <p>Sample frames from spherical rendering</p>
+        </div>
+        <div class="image-container large-image">
+            <video controls style="width: 100%; max-width: 800px;">
+                <source src="nerf_lego_spherical.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p>Spherical rendering of the Lego scene using test camera extrinsics (60 frames)</p>
+        </div>
+        <div class="image-container large-image">
+            <img src="nerf_lego_spherical.gif" alt="Lego Spherical Rendering GIF" style="width: 100%; max-width: 800px;">
+            <p>GIF version of the spherical rendering</p>
+        </div>
+
+        <!-- Part 2.6: Training with Your Own Data -->
+        <h2>Part 2.6: Training with Your Own Data</h2>
+
+        <div class="implementation">
+            <h3>Custom Dataset: Cup Scene</h3>
+            <p>I trained a NeRF on the cup dataset captured in Part 0. Key adjustments made:</p>
+            <ul>
+                <li><strong>Near/Far Parameters:</strong> Adjusted from (2.0, 6.0) to (0.3, 0.5) to match the scale of the real-world scene</li>
+                <li><strong>Training Configuration:</strong>
+                    <ul>
+                        <li>Iterations: 500</li>
+                        <li>Batch size: 10,000 rays per iteration</li>
+                        <li>Learning rate: 5e-4</li>
+                        <li>Samples per ray: 64</li>
+                    </ul>
+                </li>
+                <li><strong>Image Resolution:</strong> Used original resolution (240 × 320) with adjusted intrinsics</li>
+                <li><strong>Final PSNR:</strong> 7.28 dB (lower than Lego due to real-world capture challenges)</li>
+            </ul>
+        </div>
+
+        <h3>Training Loss Over Iterations</h3>
+        <div class="image-container large-image">
+            <img src="final_images/15_cup_training_loss_psnr.png" alt="Cup Training Loss and PSNR">
+            <p>Training loss and validation PSNR curves for the cup scene</p>
+        </div>
+
+        <h3>Intermediate Renders During Training</h3>
+        <div class="image-container large-image">
+            <img src="final_images/16_cup_intermediate_renders.png" alt="Cup Intermediate Renders">
+            <p>Intermediate validation renders at iterations 100, 200, 300, 400, and 500 showing gradual improvement</p>
+        </div>
+        <div class="image-container large-image">
+            <img src="final_images/17_cup_scene_frames.png" alt="Cup Scene Frames">
+            <p>Sample frames from the cup scene novel view rendering</p>
+        </div>
+
+        <h3>Visualization: Cup Scene Rays and Samples</h3>
+        <div class="image-container large-image">
+            <img src="final_images/14_cup_rays_and_samples.png" alt="Cup Rays and Samples">
+            <p>3D visualization of rays and sample points for the cup scene</p>
+        </div>
+
+        <h3>Camera Frustum Visualization: Cup Scene</h3>
+        <div class="image-container large-image">
+            <img src="viser/cup.png" alt="Cup Dataset Camera Frustums">
+            <p><strong>Cup Scene Camera Frustums:</strong> This visualization shows the camera frustums for the custom cup dataset captured in Part 0. The cameras are positioned around the cup object at various angles, demonstrating the real-world capture setup. The frustums show the actual captured images, and their distribution reflects the manual camera positioning during the capture process. This visualization helps verify that the camera poses were correctly estimated and that the scene has adequate coverage for NeRF reconstruction.</p>
+        </div>
+
+        <h3>Novel View Rendering: Cup Scene</h3>
+        <div class="image-container large-image">
+            <video controls style="width: 100%; max-width: 800px;">
+                <source src="cup_scene.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <p>Novel view rendering of the cup scene - camera circling the object (60 frames)</p>
+        </div>
+        <div class="image-container large-image">
+            <img src="cup_scene.gif" alt="Cup Scene GIF" style="width: 100%; max-width: 800px;">
+            <p>GIF version of the cup scene novel view rendering</p>
+        </div>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #3498db;">
+            <p><em>NeRF: Neural Radiance Fields - Project 6</em></p>
+        </div>
+    </div>
+    <div class="footer">
+        <div>© NeRF Project 6 • Built with Python, PyTorch, and OpenCV</div>
+        <div><a class="section-link" href="#part0">Back to top</a></div>
+    </div>
+</body>
+</html>
+

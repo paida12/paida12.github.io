@@ -1,0 +1,6 @@
+{
+  "timestamp": "2025-11-14T19:20:28",
+  "final_psnr": 4.659940494895195,
+  "iterations": 500,
+  "results_file": "nerf_lafufu_results.pt"
+}

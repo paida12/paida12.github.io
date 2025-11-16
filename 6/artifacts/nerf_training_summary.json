@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-11-15T20:19:52",
+  "config": {
+    "iterations": 1000,
+    "batch_size": 2000,
+    "learning_rate": 0.0005,
+    "near": 2.0,
+    "far": 6.0,
+    "n_samples": 64,
+    "device": "mps",
+    "val_checkpoints": [
+      1,
+      10,
+      50,
+      100,
+      200,
+      300,
+      500,
+      1000
+    ]
+  },
+  "final_metrics": {
+    "final_iteration": 1000,
+    "final_loss": 0.007251246832311153,
+    "final_psnr": 21.975481932151126,
+    "total_time_minutes": 8.304779716332753
+  },
+  "history_length": 1000,
+  "results_file": "artifacts/nerf_training_results.pt"
+}

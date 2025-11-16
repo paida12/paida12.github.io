@@ -1,0 +1,6 @@
+{
+  "timestamp": "2025-11-14T18:47:52",
+  "final_psnr": 13.255646019608932,
+  "iterations": 500,
+  "results_file": "nerf_cup_results.pt"
+}
