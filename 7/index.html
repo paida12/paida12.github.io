@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diffusion Models & Flow Matching - Project 5</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0f0f14;
+            --bg-secondary: #16161d;
+            --bg-card: #1c1c26;
+            --bg-highlight: #232330;
+            --accent-primary: #7c3aed;
+            --accent-secondary: #a78bfa;
+            --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #2e2e3a;
+            --success: #22c55e;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(99, 102, 241, 0.08) 0%, transparent 40%);
+        }
+
+        /* Navigation */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 15, 20, 0.85);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+        }
+
+        .brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+            background: var(--bg-highlight);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 24px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 0 80px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #a78bfa 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 24px;
+        }
+
+        .hero .badge {
+            display: inline-block;
+            background: var(--bg-highlight);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--accent-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .divider {
+            height: 4px;
+            width: 100px;
+            background: var(--accent-gradient);
+            margin: 32px auto;
+            border-radius: 2px;
+        }
+
+        /* Section Headers */
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 64px 0 24px;
+            padding-left: 20px;
+            border-left: 4px solid;
+            border-image: var(--accent-gradient) 1;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 32px 0 16px;
+        }
+
+        h4 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin: 24px 0 12px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .card.implementation {
+            border-left: 4px solid var(--accent-primary);
+        }
+
+        .card.math {
+            border-left: 4px solid #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .card.results {
+            border-left: 4px solid #f59e0b;
+            background: rgba(245, 158, 11, 0.05);
+        }
+
+        /* Code blocks */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-highlight);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--accent-secondary);
+        }
+
+        .equation {
+            background: var(--bg-highlight);
+            padding: 16px 24px;
+            border-radius: 8px;
+            margin: 16px 0;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: var(--accent-secondary);
+        }
+
+        /* Image Grid */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 24px 0;
+        }
+
+        .image-grid.cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .image-grid.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .image-grid.cols-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .image-grid.cols-6 {
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        @media (max-width: 768px) {
+            .image-grid.cols-3, .image-grid.cols-4, .image-grid.cols-6 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .image-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-container:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.15);
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .image-container p {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .large-image {
+            max-width: 800px;
+            margin: 24px auto;
+        }
+
+        .full-width {
+            max-width: 100%;
+        }
+
+        /* Comparison layout */
+        .comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin: 24px 0;
+        }
+
+        .comparison-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .comparison-item h4 {
+            margin: 0 0 12px;
+            color: var(--accent-secondary);
+        }
+
+        /* Lists */
+        ul {
+            padding-left: 24px;
+            margin: 12px 0;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        li strong {
+            color: var(--text-primary);
+        }
+
+        /* Paragraphs */
+        p {
+            color: var(--text-secondary);
+            margin: 12px 0;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            margin-top: 60px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--accent-secondary);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Seed badge */
+        .seed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-highlight);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            margin: 16px 0;
+        }
+
+        .seed-badge::before {
+            content: "🎲";
+        }
+
+        /* Progress indicator */
+        .steps-visual {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+
+        .step {
+            background: var(--bg-highlight);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .step.active {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .arrow {
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <nav class="topbar">
+        <div class="nav">
+            <div class="brand">🌀 Diffusion & Flow Matching - Project 5</div>
+            <div class="nav-links">
+                <a href="#part0">Part 0</a>
+                <a href="#part1-1">1.1</a>
+                <a href="#part1-2">1.2</a>
+                <a href="#part1-3">1.3</a>
+                <a href="#part1-4">1.4</a>
+                <a href="#part1-5">1.5</a>
+                <a href="#part1-6">1.6</a>
+                <a href="#part1-7">1.7</a>
+                <a href="#part1-8">1.8</a>
+                <a href="#part1-9">1.9</a>
+                <a href="#partB" style="color: var(--accent-secondary);">Part B</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>Diffusion Models & Flow Matching</h1>
+            <p class="subtitle">Part A: Exploring DeepFloyd IF for image generation, denoising, and optical illusions<br>Part B: Training UNets from scratch for denoising and flow matching on MNIST</p>
+            <span class="badge">CS 180 - Project 5</span>
+            <div class="divider"></div>
+        </div>
+
+        <!-- Part 0: Setup -->
+        <h2 id="part0">Part 0: Setup & Playing with the Model</h2>
+        
+        <div class="card implementation">
+            <h3>DeepFloyd IF Overview</h3>
+            <p>DeepFloyd IF is a two-stage text-to-image diffusion model trained by Stability AI. The first stage produces 64×64 images, and the second stage upscales to 256×256. For this project, we work primarily with the first stage to understand diffusion fundamentals.</p>
+            <p>To use DeepFloyd, we first convert text prompts into high-dimensional embeddings (4096 dimensions) using the provided Hugging Face encoder. These embeddings condition the diffusion model during generation.</p>
+        </div>
+
+        <div class="seed-badge">Random Seed: 42 (used throughout all experiments)</div>
+
+        <h3>Custom Text Prompts</h3>
+        <p>I generated images using prompts, experimenting with 2 different inference steps (20 and 50) to observe quality differences.</p>
+
+        <div class="image-grid cols-2" style="max-width: 600px; margin: 24px auto;">
+            <div class="image-container">
+                <img src="images-5a/0-rocket-ship-20.png" alt="Rocket Ship 20 steps">
+                <p>"A rocket ship" (20 steps)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/0-rocket-ship-50.png" alt="Rocket Ship 50 steps">
+                <p>"A rocket ship" (50 steps)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/0-amalfi-coast-20.png" alt="Amalfi Coast 20 steps">
+                <p>"Amalfi coast" (20 steps)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/0-amalfi-coast-50.png" alt="Amalfi Coast 50 steps">
+                <p>"Amalfi coast" (50 steps)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/0-oil-painting-of-snowy-mountain-village-20.png" alt="Snowy Mountain 20 steps">
+                <p>"Oil painting of snowy mountain village" (20 steps)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/0-oil-painting-of-snowy-mountain-village-50.png" alt="Snowy Mountain 50 steps">
+                <p>"Oil painting of snowy mountain village" (50 steps)</p>
+            </div>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>With more inference steps (50 vs 20), the generated images show improved coherence and detail. The rocket ship becomes more defined, the Amalfi coast gains more realistic textures, and the oil painting style becomes more pronounced in the mountain village scene. However, even at 20 steps, the model captures the semantic essence of each prompt reasonably well.</p>
+        </div>
+
+        <!-- Part 1.1: Forward Process -->
+        <h2 id="part1-1">Part 1.1: Implementing the Forward Process</h2>
+
+        <div class="card math">
+            <h3>The Forward Diffusion Process</h3>
+            <p>The forward process progressively adds Gaussian noise to a clean image. Given a clean image x₀, we can compute a noisy version xₜ at any timestep t:</p>
+            <div class="equation">xₜ = √ᾱₜ · x₀ + √(1 - ᾱₜ) · ε, where ε ~ N(0, I)</div>
+            <p>Here, ᾱₜ (alphas_cumprod) controls the noise schedule. As t increases, ᾱₜ decreases, meaning more noise is added.</p>
+        </div>
+
+        <div class="card implementation">
+            <h3>Implementation</h3>
+            <p>I implemented the <code>forward(im, t)</code> function that takes a clean image and returns its noised version at timestep t. The implementation uses <code>torch.randn_like</code> to sample noise and scales the image and noise according to the alphas_cumprod schedule.</p>
+        </div>
+
+        <h3>Forward Process Results on Campanile</h3>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.1-campanile-original" alt="Original Campanile">
+                <p>Original (t=0)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.1-campanlie-250" alt="Campanile t=250">
+                <p>t = 250</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.1-campanile-500" alt="Campanile t=500">
+                <p>t = 500</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.1-campanlie-750" alt="Campanile t=750">
+                <p>t = 750</p>
+            </div>
+        </div>
+
+        <div class="steps-visual">
+            <span class="step active">Clean</span>
+            <span class="arrow">→</span>
+            <span class="step">t=250</span>
+            <span class="arrow">→</span>
+            <span class="step">t=500</span>
+            <span class="arrow">→</span>
+            <span class="step">t=750</span>
+            <span class="arrow">→</span>
+            <span class="step">Pure Noise (t=1000)</span>
+        </div>
+
+        <!-- Part 1.2: Classical Denoising -->
+        <h2 id="part1-2">Part 1.2: Classical Denoising</h2>
+
+        <div class="card implementation">
+            <h3>Gaussian Blur Denoising</h3>
+            <p>Before using learned denoisers, let's try classical approaches. Gaussian blur can remove some noise by averaging neighboring pixels, but it cannot distinguish between signal and noise effectively—it simply blurs everything.</p>
+        </div>
+
+        <h3>Gaussian Blur Results</h3>
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5a/1.1-campanlie-250" alt="Noisy t=250">
+                <p>Noisy (t=250)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.1-campanile-500" alt="Noisy t=500">
+                <p>Noisy (t=500)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.1-campanlie-750" alt="Noisy t=750">
+                <p>Noisy (t=750)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.2-campanile-denoised-250" alt="Gaussian Denoised t=250">
+                <p>Gaussian Blur (t=250)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.2-campanile-denoised-500" alt="Gaussian Denoised t=500">
+                <p>Gaussian Blur (t=500)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.2-campanile-denoised-750" alt="Gaussian Denoised t=750">
+                <p>Gaussian Blur (t=750)</p>
+            </div>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>Gaussian blur fails to effectively denoise the images. While it slightly smooths the noise, it also destroys important details. At higher noise levels (t=750), the result is nearly unrecognizable—just a blurry mess. This motivates the need for learned denoising methods that understand image structure.</p>
+        </div>
+
+        <!-- Part 1.3: One-Step Denoising -->
+        <h2 id="part1-3">Part 1.3: One-Step Denoising</h2>
+
+        <div class="card implementation">
+            <h3>Using the Pretrained UNet</h3>
+            <p>DeepFloyd's UNet was trained on millions of (xₜ, x₀) pairs to predict the noise ε in a noisy image. Given noisy image xₜ and timestep t, we can estimate the original clean image:</p>
+            <div class="equation">x̂₀ = (xₜ - √(1 - ᾱₜ) · ε̂) / √ᾱₜ</div>
+            <p>We use the text prompt "a high quality photo" as conditioning for this part.</p>
+        </div>
+
+        <h3>One-Step Denoising Results</h3>
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5a/1.3-og-250" alt="Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-noisy-250" alt="Noisy t=250">
+                <p>Noisy (t=250)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-denoised-250" alt="Denoised t=250">
+                <p>One-Step Denoised</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-og-500" alt="Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-noisy-500" alt="Noisy t=500">
+                <p>Noisy (t=500)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-denoised-500" alt="Denoised t=500">
+                <p>One-Step Denoised</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-og-750" alt="Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-noisy-750" alt="Noisy t=750">
+                <p>Noisy (t=750)</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.3-denoised-750" alt="Denoised t=750">
+                <p>One-Step Denoised</p>
+            </div>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>The UNet-based denoising dramatically outperforms Gaussian blur! At t=250, the recovered image is nearly identical to the original. At t=500, we can still recognize the Campanile clearly. Even at t=750, where the image is almost pure noise, the model recovers a reasonable approximation—though with some artifacts and hallucinated details.</p>
+        </div>
+
+        <!-- Part 1.4: Iterative Denoising -->
+        <h2 id="part1-4">Part 1.4: Iterative Denoising</h2>
+
+        <div class="card math">
+            <h3>DDPM Sampling</h3>
+            <p>Instead of jumping directly from xₜ to x₀, we can iteratively denoise in smaller steps. This produces much better results:</p>
+            <div class="equation">xₜ' = (√ᾱₜ' · β̃ₜ / (1 - ᾱₜ)) · x̂₀ + (√ᾱₜ · (1 - ᾱₜ') / (1 - ᾱₜ)) · xₜ + σₜ · z</div>
+            <p>Using strided timesteps (990, 960, 930, ..., 30, 0), we can efficiently denoise while maintaining quality.</p>
+        </div>
+
+        <div class="card implementation">
+            <h3>Implementation</h3>
+            <p>I implemented <code>iterative_denoise(im_noisy, i_start)</code> which takes a noisy image and starting index, then iteratively applies the DDPM update formula. The stride of 30 means we only need ~33 denoising steps instead of 1000.</p>
+        </div>
+
+        <h3>Comparison: Iterative Denoising vs One-Step vs Gaussian Blur</h3>
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5a/1.4-iterative" alt="Iterative Denoising">
+                <p>Iterative Denoising</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.4-one-step-denoise" alt="One-Step Denoising">
+                <p>One-Step Denoising</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.4-gaussian-blur" alt="Gaussian Blur">
+                <p>Gaussian Blur</p>
+            </div>
+        </div>
+
+        <div class="card results">
+            <h4>Key Takeaways</h4>
+            <ul>
+                <li><strong>Iterative Denoising:</strong> Produces the cleanest results by gradually refining the image</li>
+                <li><strong>One-Step Denoising:</strong> Faster but produces more artifacts, especially at high noise levels</li>
+                <li><strong>Gaussian Blur:</strong> Completely fails to recover meaningful image content</li>
+            </ul>
+        </div>
+
+        <!-- Part 1.5: Diffusion Model Sampling -->
+        <h2 id="part1-5">Part 1.5: Diffusion Model Sampling</h2>
+
+        <div class="card implementation">
+            <h3>Generating Images from Pure Noise</h3>
+            <p>The magic of diffusion: we can generate entirely new images by starting with pure Gaussian noise and running iterative denoising from i_start=0. The model "hallucinates" coherent images guided by the text prompt.</p>
+        </div>
+
+        <h3>Samples from Pure Noise</h3>
+        <p>Generated with prompt: "a high quality photo"</p>
+        <div class="image-container large-image full-width">
+            <img src="images-5a/1.5-images-from-pure-noise" alt="Images from Pure Noise">
+            <p>5 samples generated from pure noise (no CFG)</p>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>Without Classifier-Free Guidance (CFG), the generated images are often blurry, incoherent, or semantically unclear. The model produces something that vaguely resembles photos, but lacks the crispness and coherence we'd expect. This motivates CFG in the next section.</p>
+        </div>
+
+        <!-- Part 1.6: Classifier-Free Guidance -->
+        <h2 id="part1-6">Part 1.6: Classifier-Free Guidance (CFG)</h2>
+
+        <div class="card math">
+            <h3>CFG Formula</h3>
+            <p>CFG combines conditional and unconditional noise estimates to improve image quality:</p>
+            <div class="equation">ε̂ = εᵤ + γ · (εc - εᵤ)</div>
+            <p>Where εᵤ is unconditional noise, εc is conditional noise, and γ is the guidance scale. For γ > 1, we amplify the effect of conditioning, leading to sharper, more prompt-aligned images.</p>
+        </div>
+
+        <div class="card implementation">
+            <h3>Implementation</h3>
+            <p>I implemented <code>iterative_denoise_cfg</code> which runs the UNet twice per step—once with the prompt embedding and once with an empty prompt—then combines the results using CFG with γ = 7.</p>
+        </div>
+
+        <h3>CFG Samples (γ = 7)</h3>
+        <p>Generated with prompt: "a high quality photo"</p>
+        <div class="image-container large-image full-width">
+            <img src="images-5a/1.6-cfg-images" alt="CFG Images">
+            <p>5 samples with Classifier-Free Guidance (γ = 7)</p>
+        </div>
+
+        <div class="card results">
+            <h4>CFG vs. No CFG</h4>
+            <p>The improvement is dramatic! With CFG, generated images are sharper, more coherent, and clearly depict recognizable scenes. The guidance scale pushes the model to commit more strongly to the conditioning, resulting in higher-quality outputs at the cost of some diversity.</p>
+        </div>
+
+        <!-- Part 1.7: Image-to-Image Translation -->
+        <h2 id="part1-7">Part 1.7: Image-to-image Translation (SDEdit)</h2>
+
+        <div class="card implementation">
+            <h3>SDEdit Algorithm</h3>
+            <p>By adding noise to a real image and then denoising, we can "edit" images. The amount of noise controls the edit strength: more noise = more creative freedom = bigger changes. This projects images onto the natural image manifold while preserving varying amounts of original content.</p>
+        </div>
+
+        <h3>Campanile Noise Transition</h3>
+        <div class="image-container large-image full-width">
+            <img src="images-5a/1.7-campanile-noise-transition" alt="Campanile Noise Transition">
+            <p>SDEdit on Campanile at different noise levels (i_start = 1, 3, 5, 7, 10, 20)</p>
+        </div>
+
+        <h3>Custom Image Transformations</h3>
+        <div class="image-container large-image full-width">
+            <img src="images-5a/1.7-t-rex-noise-transformations" alt="T-Rex Noise Transformations">
+            <p>SDEdit applied to T-Rex at various noise levels</p>
+        </div>
+
+        <div class="image-container large-image full-width">
+            <img src="images-5a/1.7-snowboarding-noise-transformation" alt="Snowboarding Noise Transformation">
+            <p>SDEdit applied to Snowboarding image at various noise levels</p>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>At low i_start (more denoising steps), the model has more freedom to "reimagine" the image—we see significant changes to structure and content. At high i_start (fewer steps), the original image is largely preserved with only minor stylistic changes.</p>
+        </div>
+
+        <!-- Part 1.7.1: Hand-Drawn and Web Images -->
+        <h3 id="part1-7-1">Part 1.7.1: Editing Hand-Drawn and Web Images</h3>
+
+        <div class="card implementation">
+            <h3>Non-Realistic to Realistic</h3>
+            <p>SDEdit shines when projecting non-realistic images (sketches, drawings, clip art) onto the natural image manifold. The model fills in realistic details while respecting the original composition.</p>
+        </div>
+
+        <h4>Web Image: Parasailing</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-original" alt="Parasailing Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-1" alt="Parasailing i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-3" alt="Parasailing i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-5" alt="Parasailing i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-7" alt="Parasailing i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-10" alt="Parasailing i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-parasailing-20" alt="Parasailing i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <h4>Hand-Drawn: House Sketch</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house" alt="House Sketch Original">
+                <p>Original Sketch</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-1" alt="House i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-3" alt="House i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-5" alt="House i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-7" alt="House i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-10" alt="House i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-house-denoise-20" alt="House i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <h4>Hand-Drawn: Angry Man</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man" alt="Angry Man Original">
+                <p>Original Sketch</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawm-angry-man-denoise-1" alt="Angry Man i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man-denoise-3" alt="Angry Man i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man-denoise-5" alt="Angry Man i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man-denoise7" alt="Angry Man i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man-denoise-10" alt="Angry Man i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.1-handdrawn-angry-man-denoise-20" alt="Angry Man i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <!-- Part 1.7.2: Inpainting -->
+        <h3 id="part1-7-2">Part 1.7.2: Inpainting</h3>
+
+        <div class="card math">
+            <h3>RePaint Algorithm</h3>
+            <p>At each denoising step, we replace unmasked regions with the appropriately-noised original image:</p>
+            <div class="equation">xₜ' = m ⊙ xₜ' + (1 - m) ⊙ forward(x₀, t')</div>
+            <p>This preserves original content outside the mask while allowing the model to "imagine" new content inside.</p>
+        </div>
+
+        <h4>Campanile Inpainting</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.2-campanile" alt="Campanile Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-campanile-mask" alt="Campanile Mask">
+                <p>Mask</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-campanile-masked" alt="Campanile Masked">
+                <p>Region to Fill</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-inpainted-campanile" alt="Inpainted Campanile">
+                <p>Inpainted Result</p>
+            </div>
+        </div>
+
+        <h4>Snowboarding Inpainting</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.2-snowboarding" alt="Snowboarding Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-snowboarding-mask" alt="Snowboarding Mask">
+                <p>Mask</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-snowboarding-masked" alt="Snowboarding Masked">
+                <p>Region to Fill</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-inpainted-snowboarding" alt="Inpainted Snowboarding">
+                <p>Inpainted Result</p>
+            </div>
+        </div>
+
+        <h4>T-Rex Inpainting</h4>
+        <div class="image-grid cols-4">
+            <div class="image-container">
+                <img src="images-5a/1.7.2-t-rex" alt="T-Rex Original">
+                <p>Original</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-t-rex-mask" alt="T-Rex Mask">
+                <p>Mask</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-t-rex-masked" alt="T-Rex Masked">
+                <p>Region to Fill</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.2-inpainted-t-rex" alt="Inpainted T-Rex">
+                <p>Inpainted Result</p>
+            </div>
+        </div>
+
+        <!-- Part 1.7.3: Text-Conditional Image-to-Image -->
+        <h3 id="part1-7-3">Part 1.7.3: Text-Conditional Image-to-Image Translation</h3>
+
+        <div class="card implementation">
+            <h3>Guided SDEdit</h3>
+            <p>By changing the text prompt from "a high quality photo" to something specific, we can guide the image transformation toward particular concepts while respecting the original structure.</p>
+        </div>
+
+        <h4>A Lithograph of a Skull → Campanile</h4>
+        <p>Prompt: "a lithograph of a skull"</p>
+        <div class="image-grid cols-6">
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-1" alt="Skull i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-3" alt="Skull i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-5" alt="Skull i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-7" alt="Skull i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-10" alt="Skull i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-level-20" alt="Skull i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <h4>Hipster Barista → Snowboarding</h4>
+        <p>Prompt: "a photo of a hipster barista"</p>
+        <div class="image-grid cols-6">
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-1" alt="Hipster Barista i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-3" alt="Hipster Barista i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-5" alt="Hipster Barista i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-7" alt="Hipster Barista i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-10" alt="Hipster Barista i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-hipsterbaristatosnowboarding-20" alt="Hipster Barista i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <h4>Pencil → T-Rex</h4>
+        <p>Prompt: "a pencil"</p>
+        <div class="image-grid cols-6">
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-1" alt="Pencil i=1">
+                <p>i_start = 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-3" alt="Pencil i=3">
+                <p>i_start = 3</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-5" alt="Pencil i=5">
+                <p>i_start = 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-7" alt="Pencil i=7">
+                <p>i_start = 7</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-10" alt="Pencil i=10">
+                <p>i_start = 10</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5a/1.7.3-penciltotrex-20" alt="Pencil i=20">
+                <p>i_start = 20</p>
+            </div>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>At low i_start values, the original image is completely transformed according to the text prompt. As i_start increases, we see a gradient where more of the original image is preserved. The model creatively blends the semantic content of the prompt with the structure of the source image.</p>
+        </div>
+
+        <!-- Part 1.8: Visual Anagrams -->
+        <h2 id="part1-8">Part 1.8: Visual Anagrams</h2>
+
+        <div class="card math">
+            <h3>Dual-Prompt Noise Estimation</h3>
+            <p>To create images that look like different things when flipped, we combine noise estimates from both orientations:</p>
+            <div class="equation">ε̂ = (ε₁ + flip(ε₂)) / 2</div>
+            <p>Where ε₁ is estimated with prompt₁ on the upright image, and ε₂ is estimated with prompt₂ on the flipped image.</p>
+        </div>
+
+        <div class="card implementation">
+            <h3>Implementation</h3>
+            <p>At each denoising step, I run the UNet twice: once normally with the first prompt, and once on the flipped image with the second prompt. The second noise estimate is flipped back before averaging with the first.</p>
+        </div>
+
+        <h3>Visual Anagrams</h3>
+        <div class="image-container large-image" style="max-width: 350px; margin: 24px auto;">
+            <img src="images-5a/1.8-flipped-man-campfire.png" alt="Old Man / Campfire">
+            <p>Upright: "An oil painting of an old man"<br>Flipped: "People around a campfire"</p>
+        </div>
+        <div class="image-container large-image" style="max-width: 350px; margin: 24px auto;">
+            <img src="images-5a/1.8-flipped-waterfall-man.png" alt="Waterfall / Man">
+            <p>Upright: "A waterfall"<br>Flipped: "An old man"</p>
+        </div>
+
+        <!-- Part 1.9: Hybrid Images -->
+        <h2 id="part1-9">Part 1.9: Hybrid Images</h2>
+
+        <div class="card math">
+            <h3>Factorized Diffusion</h3>
+            <p>Similar to Project 2's hybrid images, we combine low frequencies from one noise estimate with high frequencies from another:</p>
+            <div class="equation">ε̂ = low_pass(ε₁) + high_pass(ε₂)</div>
+            <p>Using Gaussian blur (kernel=33, σ=2) for low-pass filtering. The result looks like prompt₁ from far away and prompt₂ up close.</p>
+        </div>
+
+        <h3>Hybrid Image 1: Skull / Man</h3>
+        <div class="image-container large-image" style="max-width: 350px; margin: 24px auto;">
+            <img src="images-5a/1.9-hybrid-skull-man" alt="Hybrid Skull Man">
+            <p>Low frequency: "a skull" | High frequency: "an old man" — Step back to see the skull!</p>
+        </div>
+
+        <h3>Hybrid Image 2: Pencil / Rocket Ship</h3>
+        <div class="image-container large-image" style="max-width: 350px; margin: 24px auto;">
+            <img src="images-5a/1.9-hybrid-pencil-rocket-ship" alt="Hybrid Pencil Rocket">
+            <p>Low frequency: "a pencil" | High frequency: "a rocket ship" — From afar it's a pencil!</p>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PART B: Flow Matching from Scratch -->
+        <!-- ========================================== -->
+
+        <div class="divider" style="margin-top: 80px;"></div>
+        
+        <div class="hero" id="partB" style="padding: 40px 0;">
+            <h1 style="font-size: 2.5rem;">Part B: Flow Matching from Scratch</h1>
+            <p class="subtitle">Training UNet denoisers and flow matching models on MNIST digits</p>
+        </div>
+
+        <!-- Part 1: Training a Single-step Denoising UNet -->
+        <h2 id="partB-1">Part 1: Training a Single-step Denoising UNet</h2>
+
+        <div class="card implementation">
+            <h3>Part 1.1: Implementing the UNet</h3>
+            <p>I implemented a UNet architecture for denoising 28×28 MNIST images. The network consists of:</p>
+            <ul>
+                <li><strong>Encoder:</strong> ConvBlock → DownBlock → DownBlock (progressively reduces spatial dimensions)</li>
+                <li><strong>Bottleneck:</strong> Flatten → Unflatten (compresses to 1×1 and expands back to 7×7)</li>
+                <li><strong>Decoder:</strong> UpBlock → UpBlock → ConvBlock with skip connections from encoder</li>
+                <li><strong>Operations:</strong> Each Conv uses 3×3 kernels with BatchNorm and GELU activation</li>
+            </ul>
+        </div>
+
+        <h3 id="partB-1-2">Part 1.2: Using the UNet to Train a Denoiser</h3>
+
+        <h4>Noising Process Visualization</h4>
+        <p>To train a denoiser, we first need to understand the noising process. Below shows an MNIST digit with increasing noise levels (σ = 0.0 to 1.0):</p>
+        <div class="image-container large-image full-width">
+            <img src="images-5b/1.2-noising-process" alt="Noising Process">
+            <p>MNIST digit with increasing noise levels: σ = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]</p>
+        </div>
+
+        <h4>Part 1.2.1: Training</h4>
+        <div class="card implementation">
+            <p>Training configuration:</p>
+            <ul>
+                <li><strong>Noise level:</strong> σ = 0.5 (fixed during training)</li>
+                <li><strong>Batch size:</strong> 256</li>
+                <li><strong>Learning rate:</strong> 1e-4</li>
+                <li><strong>Hidden dimension:</strong> 128</li>
+                <li><strong>Epochs:</strong> 5</li>
+                <li><strong>Loss:</strong> MSE between predicted clean image and ground truth</li>
+            </ul>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/1.2.1-training-curve" alt="Training Curve">
+            <p>Training loss curve for single-step denoiser (σ = 0.5)</p>
+        </div>
+
+        <h4>Part 1.2.2: Out-of-Distribution Testing</h4>
+        <p>Testing the denoiser trained on σ = 0.5 with various noise levels shows how it generalizes:</p>
+        <div class="image-container large-image" style="max-width: 450px; margin: 24px auto;">
+            <img src="images-5b/1.2.2-denoising-sigmas" alt="OOD Testing">
+            <p>Out-of-distribution testing: Denoiser trained at σ=0.5 tested on σ = [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]</p>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>The denoiser works best at σ=0.5 (the training distribution). At lower noise levels, it tends to over-smooth. At higher noise levels, it struggles to recover details since it never saw such heavy noise during training. This motivates training with varying noise levels.</p>
+        </div>
+
+        <h4>Part 1.2.3: Denoising Pure Noise</h4>
+        <p>What happens if we try to train a denoiser that takes pure noise and outputs an image? This is essentially trying to learn the entire data distribution in one step.</p>
+
+        <div class="image-grid cols-2" style="max-width: 800px; margin: 24px auto;">
+            <div class="image-container">
+                <img src="images-5b/1.2.3-denoising-pure-noise-1" alt="Pure Noise Epoch 1">
+                <p>Epoch 1: Noisy, blob-like outputs</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/1.2.3-denoising-pure-noise-5" alt="Pure Noise Epoch 5">
+                <p>Epoch 5: Still blurry, averaging over digits</p>
+            </div>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/1.2.3-training-curve" alt="Pure Noise Training Curve">
+            <p>Training loss curve for pure noise denoising</p>
+        </div>
+
+        <div class="card results">
+            <h4>Why This Fails</h4>
+            <p>Mapping pure noise to clean images in one step is nearly impossible. The model tries to output the "average" digit, resulting in blurry blobs. This motivates iterative refinement approaches like flow matching.</p>
+        </div>
+
+        <!-- Part 2: Flow Matching -->
+        <h2 id="partB-2">Part 2: Flow Matching</h2>
+
+        <div class="card math">
+            <h3>Flow Matching Overview</h3>
+            <p>Instead of denoising in one step, flow matching learns to transport samples from noise to data through a continuous flow. Given noise x₀ and data x₁, we define:</p>
+            <div class="equation">xₜ = (1 - t) · x₀ + t · x₁</div>
+            <p>The network learns to predict the velocity field u = x₁ - x₀ at each timestep t ∈ [0, 1].</p>
+        </div>
+
+        <h3 id="partB-2-1">Part 2.1: Time-Conditioned UNet</h3>
+        <div class="card implementation">
+            <p>Extended the UNet to accept time conditioning:</p>
+            <ul>
+                <li><strong>Time embedding:</strong> Two FCBlocks that map scalar t to hidden dimension</li>
+                <li><strong>Conditioning:</strong> Time embeddings are multiplied with features after unflatten and first upblock</li>
+                <li><strong>Output:</strong> Predicts velocity u = x₁ - x at current state xₜ</li>
+            </ul>
+        </div>
+
+        <h3 id="partB-2-2">Part 2.2: Training the Time-Conditioned UNet</h3>
+        <div class="card implementation">
+            <p>Training configuration:</p>
+            <ul>
+                <li><strong>Batch size:</strong> 64</li>
+                <li><strong>Learning rate:</strong> 1e-2 with exponential decay</li>
+                <li><strong>Hidden dimension:</strong> 64</li>
+                <li><strong>Epochs:</strong> 20</li>
+                <li><strong>Timesteps:</strong> 50 for sampling</li>
+            </ul>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/2.2-training-loss-curve" alt="Time-Conditioned Training Curve">
+            <p>Training loss curve for time-conditioned flow matching UNet</p>
+        </div>
+
+        <h3 id="partB-2-3">Part 2.3: Sampling from the Time-Conditioned UNet</h3>
+        <p>Starting from pure noise, we integrate the learned velocity field over 50 timesteps:</p>
+
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5b/2.3-UNET-epoch-1" alt="Samples Epoch 1">
+                <p>Epoch 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.3-UNET-epoch-5" alt="Samples Epoch 5">
+                <p>Epoch 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.3-UNET-epoch-10" alt="Samples Epoch 10">
+                <p>Epoch 10</p>
+            </div>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/2.3-UNET-training-curve" alt="Time-Conditioned Sampling Training Curve">
+            <p>Training loss curve showing improvement over epochs</p>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <p>By epoch 10, the model generates recognizable digits! Unlike the single-step approach, flow matching successfully learns to transform noise into data through iterative refinement. However, we can't control which digit is generated.</p>
+        </div>
+
+        <h3 id="partB-2-4">Part 2.4-2.5: Class-Conditioned UNet</h3>
+        <div class="card implementation">
+            <p>To control which digit is generated, we add class conditioning:</p>
+            <ul>
+                <li><strong>Class embedding:</strong> One-hot encode digit class (0-9) and pass through FCBlocks</li>
+                <li><strong>Conditioning:</strong> Multiply class embeddings with features (similar to time)</li>
+                <li><strong>Dropout:</strong> 10% of the time, mask out class conditioning for CFG</li>
+                <li><strong>CFG at sampling:</strong> γ = 5.0 guidance scale</li>
+            </ul>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/2.5-training-loss-curve" alt="Class-Conditioned Training Curve">
+            <p>Training loss curve for class-conditioned flow matching UNet</p>
+        </div>
+
+        <h3 id="partB-2-6">Part 2.6: Sampling from the Class-Conditioned UNet</h3>
+        <p>With class conditioning and CFG (γ=5.0), we can generate specific digits:</p>
+
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5b/2.6-epoch-1" alt="Class Samples Epoch 1">
+                <p>Epoch 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.6-epoch-5" alt="Class Samples Epoch 5">
+                <p>Epoch 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.6-epoch-10" alt="Class Samples Epoch 10">
+                <p>Epoch 10</p>
+            </div>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/2.6-training-loss-curve" alt="Class-Conditioned Sampling Training Curve">
+            <p>Training loss curve for class-conditioned sampling</p>
+        </div>
+
+        
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🌀 Diffusion Models & Flow Matching — CS 180 Project 5</p>
+            <p>Part A: DeepFloyd IF on Google Colab | Part B: UNet trained from scratch on MNIST</p>
+            <p><a href="#part0">Back to top ↑</a></p>
+        </div>
+    </div>
+</body>
+</html>
