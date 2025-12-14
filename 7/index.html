@@ -1239,7 +1239,53 @@
             <p>Training loss curve for class-conditioned sampling</p>
         </div>
 
-        
+        <h2 id="partB">Training Without the Learning Rate Scheduler</h2>
+
+        <div class="card implementation">
+            <h3>Without Scheduler</h3>
+            <p>The original implementation used an exponential learning rate scheduler that decayed the LR from 1e-2 to 1e-3 over training. Can we achieve similar performance with a simpler, constant learning rate?</p>
+        </div>
+
+        <div class="card math">
+            <h3>Solution: Lower Constant Learning Rate</h3>
+            <p>To compensate for removing the scheduler, I made the following adjustments:</p>
+            <ul>
+                <li><strong>Learning rate:</strong> Reduced from 1e-2 → <strong>1e-3</strong> (constant throughout training)</li>
+                <li><strong>Rationale:</strong> The scheduler was decaying to ~1e-3 by the end anyway; starting there provides stable training without the complexity</li>
+                <li><strong>Trade-off:</strong> Slightly slower initial convergence, but simpler code and more predictable behavior</li>
+            </ul>
+            <p>This follows the principle that <em>simplicity is best</em>—a well-chosen constant LR often works as well as complex scheduling.</p>
+        </div>
+
+        <h3>Results Without Scheduler</h3>
+        <div class="image-grid cols-3">
+            <div class="image-container">
+                <img src="images-5b/2.6-no-scheduler-epoch-1" alt="No Scheduler Epoch 1">
+                <p>Epoch 1</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.6-no-scheduler-epoch-5" alt="No Scheduler Epoch 5">
+                <p>Epoch 5</p>
+            </div>
+            <div class="image-container">
+                <img src="images-5b/2.6-no-scheduler-epoch-10" alt="No Scheduler Epoch 10">
+                <p>Epoch 10</p>
+            </div>
+        </div>
+
+        <div class="image-container large-image" style="max-width: 600px; margin: 24px auto;">
+            <img src="images-5b/2.6-no-scheduler-training-curve" alt="No Scheduler Training Curve">
+            <p>Training loss curve without learning rate scheduler (constant LR = 1e-3)</p>
+        </div>
+
+        <div class="card results">
+            <h4>Observations</h4>
+            <ul>
+                <li><strong>Comparable quality:</strong> The generated digits at epoch 10 are just as recognizable as with the scheduler</li>
+                <li><strong>Smoother training:</strong> The loss curve shows steady, stable descent without the jumps from LR changes</li>
+                <li><strong>Simpler is better:</strong> Removing the scheduler eliminates a hyperparameter (decay rate) without sacrificing performance</li>
+            </ul>
+        </div>
 
         <!-- Footer -->
         <div class="footer">
